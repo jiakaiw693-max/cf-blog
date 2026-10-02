@@ -3,6 +3,6 @@ import Icon from './Icon.astro';
 import { siteConfig } from '../config';
 ---
 <footer class="site-footer container" data-pagefind-ignore>
-  <p>© {new Date().getFullYear()} {siteConfig.author}<span class="footer-divider"> / </span>文字留在这里，想法继续生长。</p>
-  <a href="/rss.xml" class="rss-link"><Icon name="rss" size={16} /> RSS 订阅</a>
+  <div><a href="/" class="footer-brand">{siteConfig.title}<span aria-hidden="true">✳</span></a><p>文字留在这里，想法继续生长。</p></div>
+  <div class="footer-right"><div class="footer-links"><a href="/about/">关于</a><a href="/reading-list/">稍后读</a><a href="/rss.xml" class="rss-link"><Icon name="rss" size={15} /> RSS</a></div><p>© {new Date().getFullYear()} {siteConfig.author} · 保持好奇，慢慢记录</p></div>
 </footer>

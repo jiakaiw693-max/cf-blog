@@ -3,7 +3,8 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 export type Post = CollectionEntry<'blog'>;
 
 export async function getPosts(): Promise<Post[]> {
-  return (await getCollection('blog', ({ data }) => !data.draft && data.publishedAt <= new Date()))
+  const cutoff = process.env.BLOG_BUILD_TIME ? new Date(process.env.BLOG_BUILD_TIME) : new Date();
+  return (await getCollection('blog', ({ data }) => !data.draft && data.publishedAt <= cutoff))
     .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime() || a.id.localeCompare(b.id));
 }
 

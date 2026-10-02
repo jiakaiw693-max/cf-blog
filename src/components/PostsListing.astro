@@ -12,7 +12,7 @@ const pageHref = (page: number) => page === 1 ? '/posts/' : `/posts/page/${page}
     <header class="page-heading"><div class="eyebrow">WRITING / {String(allPosts.length).padStart(2, '0')} POSTS</div><h1>全部文章</h1><p>关于科技、学习和日常的记录，按时间慢慢积累。</p></header>
     <div class="list-grid">
       <div>
-        {posts.map(post => <PostCard post={post} />)}
+        <div class="posts-stack">{posts.map(post => <PostCard post={post} />)}</div>
         {posts.length === 0 && <p class="empty-state">暂时还没有公开的文章。</p>}
         {totalPages > 1 && <nav class="pagination" aria-label="文章分页">
           {pageNumber > 1 ? <a href={pageHref(pageNumber - 1)} rel="prev">上一页</a> : <span>已是第一页</span>}
@@ -20,7 +20,7 @@ const pageHref = (page: number) => page === 1 ? '/posts/' : `/posts/page/${page}
           {pageNumber < totalPages ? <a href={pageHref(pageNumber + 1)} rel="next">下一页</a> : <span>已是最后一页</span>}
         </nav>}
       </div>
-      <aside class="side-section"><h2>文章标签</h2><ul class="side-tag-list">{tags.map(tag => <li><a href={tagHref(tag.name)}>{tag.name}<span>{tag.count}</span></a></li>)}</ul><div class="side-divider"></div><p>也可以按年份查看文章。</p><a class="text-link" href="/archives/">时间归档</a></aside>
+      <aside class="side-section side-panel"><h2>文章标签</h2><ul class="side-tag-list">{tags.map(tag => <li><a href={tagHref(tag.name)}>{tag.name}<span>{tag.count}</span></a></li>)}</ul><div class="side-divider"></div><p>也可以按年份查看文章。</p><a class="text-link" href="/archives/">时间归档</a></aside>
     </div>
   </div>
 </BaseLayout>

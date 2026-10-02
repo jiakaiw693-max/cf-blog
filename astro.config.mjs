@@ -6,8 +6,9 @@ export default defineConfig({
   site: getSiteUrl(),
   output: 'static',
   trailingSlash: 'always',
+  prerenderConflictBehavior: 'error',
   integrations: [sitemap({
-    filter: (page) => !page.endsWith('/404/') && !page.endsWith('/search/'),
+    filter: (page) => !['/404/', '/search/', '/reading-list/'].some(path => page.endsWith(path)),
   })],
   markdown: {
     shikiConfig: {

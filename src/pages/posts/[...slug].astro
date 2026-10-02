@@ -2,37 +2,42 @@
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TagList from '../../components/TagList.astro';
+import SaveButton from '../../components/SaveButton.astro';
+import PostCard from '../../components/PostCard.astro';
+import Icon from '../../components/Icon.astro';
 import { getPosts, postHref, formatDate, readingMinutes, type Post } from '../../lib/posts';
 export async function getStaticPaths() {
   const posts = await getPosts();
   return posts.map((post, index) => ({
     params: { slug: post.id },
-    props: { post, previous: posts[index + 1] ?? null, next: posts[index - 1] ?? null },
+    props: { post, previous: posts[index + 1] ?? null, next: posts[index - 1] ?? null,
+      related: posts.filter(entry => entry.id !== post.id).map(entry => ({ entry, score: entry.data.tags.filter(tag => post.data.tags.includes(tag)).length })).sort((a, b) => b.score - a.score).slice(0, 2).map(item => item.entry) },
   }));
 }
-interface Props { post: Post; previous: Post | null; next: Post | null; }
-const { post, previous, next } = Astro.props;
+interface Props { post: Post; previous: Post | null; next: Post | null; related: Post[]; }
+const { post, previous, next, related } = Astro.props;
 const { Content, headings } = await render(post);
 const toc = headings.filter(heading => heading.depth === 2 || heading.depth === 3);
 ---
 <BaseLayout title={post.data.title} description={post.data.description} article={{ publishedAt: post.data.publishedAt, updatedAt: post.data.updatedAt }}>
+  <div class="reading-progress" role="progressbar" aria-label="阅读进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
   <div class="container article-page">
-    <nav class="breadcrumb" aria-label="面包屑"><a href="/posts/">全部文章</a><span aria-hidden="true"> / </span><span>正文</span></nav>
+    <nav class="breadcrumb" aria-label="面包屑"><a href="/posts/">全部文章</a><Icon name="chevron" size={13} /><span>正文</span></nav>
     <div class="article-grid">
-      <article data-pagefind-body>
+      <article data-pagefind-body data-pagefind-meta={`postId:${post.id}`}>
         <header class="article-header">
+          <TagList tags={post.data.tags} filter />
           <h1 data-pagefind-meta="title">{post.data.title}</h1>
           <p class="article-description">{post.data.description}</p>
-          <div class="post-meta article-meta"><time datetime={post.data.publishedAt.toISOString()} data-pagefind-meta="date[datetime]">{formatDate(post.data.publishedAt)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{post.data.updatedAt && <span>更新于 {formatDate(post.data.updatedAt)}</span>}{post.data.example && <span class="example-label">示例文章</span>}</div>
-          <TagList tags={post.data.tags} />
+          <div class="post-meta article-meta"><time datetime={post.data.publishedAt.toISOString()} data-pagefind-meta="date[datetime]" data-pagefind-sort={`date:${post.data.publishedAt.getTime()}`}>{formatDate(post.data.publishedAt)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{post.data.updatedAt && <span>更新于 {formatDate(post.data.updatedAt)}</span>}{post.data.example && <span class="example-label">示例文章</span>}</div>
+          <div class="reader-actions" data-pagefind-ignore><SaveButton post={post} /><button class="reader-button" type="button" data-copy-link><Icon name="link" size={17} />复制链接</button><button class="reader-button font-toggle" type="button" aria-label="放大正文字号" aria-pressed="false"><Icon name="type" size={18} /><span>字号</span></button></div>
         </header>
-        <div class="prose"><Content /></div>
-        {(previous || next) && <nav class="article-navigation" aria-label="相邻文章" data-pagefind-ignore>
-          <div>{previous && <a href={postHref(previous)}><span>上一篇</span>{previous.data.title}</a>}</div>
-          <div class="next">{next && <a href={postHref(next)}><span>下一篇</span>{next.data.title}</a>}</div>
-        </nav>}
+        <div class="prose" data-reading-body><Content /></div>
+        <div class="article-endnote" data-pagefind-ignore><Icon name="spark" size={20} /><p>感谢读到这里。把喜欢的文字，留给下一次回看。</p></div>
+        {(previous || next) && <nav class="article-navigation" aria-label="相邻文章" data-pagefind-ignore><div>{previous && <a href={postHref(previous)}><span>← 上一篇</span>{previous.data.title}</a>}</div><div class="next">{next && <a href={postHref(next)}><span>下一篇 →</span>{next.data.title}</a>}</div></nav>}
       </article>
-      {toc.length > 0 && <aside class="toc" aria-label="文章目录" data-pagefind-ignore><h2>本文目录</h2><ul>{toc.map(heading => <li class:list={{ 'level-3': heading.depth === 3 }}><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ul></aside>}
+      {toc.length > 0 && <aside class="toc" aria-label="文章目录" data-pagefind-ignore><details class="toc-details"><summary><span>本文目录</span><span class="toc-percent" aria-hidden="true">0%</span></summary><ul>{toc.map(heading => <li class:list={{ 'level-3': heading.depth === 3 }}><a href={`#${encodeURIComponent(heading.slug)}`}>{heading.text}</a></li>)}</ul></details><p class="toc-note">慢一点读，也没关系。</p></aside>}
     </div>
+    {related.length > 0 && <section class="related-section" data-pagefind-ignore><div class="section-heading"><div><span class="eyebrow">KEEP EXPLORING</span><h2>接着读一读</h2></div><a href="/posts/">全部文章 ↗</a></div><div class="related-grid">{related.map(entry => <PostCard post={entry} />)}</div></section>}
   </div>
 </BaseLayout>

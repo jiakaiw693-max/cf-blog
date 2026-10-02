@@ -13,6 +13,6 @@ const { tag, posts } = Astro.props;
   <div class="reading-container page">
     <div class="breadcrumb"><a href="/tags/">全部标签</a></div>
     <header class="page-heading"><div class="eyebrow">TOPIC / {posts.length} POSTS</div><h1>{tag}</h1><p>这个主题下的 {posts.length} 篇文章。</p></header>
-    {posts.map(post => <PostCard post={post} />)}
+    <div class="posts-stack">{posts.map(post => <PostCard post={post} />)}</div>
   </div>
 </BaseLayout>

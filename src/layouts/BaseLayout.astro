@@ -3,6 +3,8 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { siteConfig } from '../config';
 import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import { getPosts } from '../lib/posts';
 interface Props {
   title?: string;
   description?: string;
@@ -10,6 +12,7 @@ interface Props {
   article?: { publishedAt: Date; updatedAt?: Date };
 }
 const { title, description = siteConfig.description, noIndex = false, article } = Astro.props;
+const publicPostIds = (await getPosts()).map(post => post.id);
 const fullTitle = title ? `${title} · ${siteConfig.title}` : siteConfig.title;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const schema = article ? {
@@ -52,14 +55,19 @@ const schema = article ? {
         try { preference = localStorage.getItem('blog-theme'); } catch {}
         const theme = preference === 'light' || preference === 'dark' ? preference : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         document.documentElement.dataset.theme = theme;
+        try { if (localStorage.getItem('blog-font-size') === 'large') document.documentElement.dataset.fontSize = 'large'; } catch {}
       })();
     </script>
+    <noscript><style>.menu-toggle,.theme-toggle,.save-button,.reader-actions,.back-to-top,[data-copy-path],.saved-toolbar,#search-form,#search-suggestions{display:none!important}.site-nav{display:flex!important;position:static!important;flex-wrap:wrap}.header-inner{flex-wrap:wrap}.mobile-saved-link{display:none!important}</style></noscript>
   </head>
   <body data-pagefind-ignore={article ? undefined : 'all'}>
     <a class="skip-link" href="#main">跳到正文</a>
     <Header />
     <main id="main"><slot /></main>
     <Footer />
+    <div id="site-toast" class="site-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    <button class="back-to-top icon-button" type="button" aria-label="回到顶部" title="回到顶部" hidden><Icon name="up" /></button>
+    <script id="public-post-ids" type="application/json" set:html={JSON.stringify(publicPostIds).replace(/</g, '\\u003c')} />
     <script>import '../scripts/site';</script>
   </body>
 </html>
