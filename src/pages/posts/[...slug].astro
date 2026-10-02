@@ -1,0 +1,38 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TagList from '../../components/TagList.astro';
+import { getPosts, postHref, formatDate, readingMinutes, type Post } from '../../lib/posts';
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post, index) => ({
+    params: { slug: post.id },
+    props: { post, previous: posts[index + 1] ?? null, next: posts[index - 1] ?? null },
+  }));
+}
+interface Props { post: Post; previous: Post | null; next: Post | null; }
+const { post, previous, next } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter(heading => heading.depth === 2 || heading.depth === 3);
+---
+<BaseLayout title={post.data.title} description={post.data.description} article={{ publishedAt: post.data.publishedAt, updatedAt: post.data.updatedAt }}>
+  <div class="container article-page">
+    <nav class="breadcrumb" aria-label="面包屑"><a href="/posts/">全部文章</a><span aria-hidden="true"> / </span><span>正文</span></nav>
+    <div class="article-grid">
+      <article data-pagefind-body>
+        <header class="article-header">
+          <h1 data-pagefind-meta="title">{post.data.title}</h1>
+          <p class="article-description">{post.data.description}</p>
+          <div class="post-meta article-meta"><time datetime={post.data.publishedAt.toISOString()} data-pagefind-meta="date[datetime]">{formatDate(post.data.publishedAt)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{post.data.updatedAt && <span>更新于 {formatDate(post.data.updatedAt)}</span>}{post.data.example && <span class="example-label">示例文章</span>}</div>
+          <TagList tags={post.data.tags} />
+        </header>
+        <div class="prose"><Content /></div>
+        {(previous || next) && <nav class="article-navigation" aria-label="相邻文章" data-pagefind-ignore>
+          <div>{previous && <a href={postHref(previous)}><span>上一篇</span>{previous.data.title}</a>}</div>
+          <div class="next">{next && <a href={postHref(next)}><span>下一篇</span>{next.data.title}</a>}</div>
+        </nav>}
+      </article>
+      {toc.length > 0 && <aside class="toc" aria-label="文章目录" data-pagefind-ignore><h2>本文目录</h2><ul>{toc.map(heading => <li class:list={{ 'level-3': heading.depth === 3 }}><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ul></aside>}
+    </div>
+  </div>
+</BaseLayout>

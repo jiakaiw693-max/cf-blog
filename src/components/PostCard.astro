@@ -1,0 +1,12 @@
+---
+import TagList from './TagList.astro';
+import { formatDate, postHref, readingMinutes, type Post } from '../lib/posts';
+interface Props { post: Post; compact?: boolean; }
+const { post, compact = false } = Astro.props;
+---
+<article class:list={['post-card', { 'post-card-compact': compact }]}>
+  <div class="post-meta"><time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{post.data.example && <span class="example-label">示例</span>}</div>
+  <h2><a href={postHref(post)}>{post.data.title}</a></h2>
+  {!compact && <p class="post-description">{post.data.description}</p>}
+  <TagList tags={post.data.tags} />
+</article>

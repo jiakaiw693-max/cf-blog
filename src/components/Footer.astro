@@ -1,0 +1,8 @@
+---
+import Icon from './Icon.astro';
+import { siteConfig } from '../config';
+---
+<footer class="site-footer container" data-pagefind-ignore>
+  <p>© {new Date().getFullYear()} {siteConfig.author}<span class="footer-divider"> / </span>文字留在这里，想法继续生长。</p>
+  <a href="/rss.xml" class="rss-link"><Icon name="rss" size={16} /> RSS 订阅</a>
+</footer>

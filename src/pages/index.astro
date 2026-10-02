@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import { siteConfig } from '../config';
+import { getPosts, getTags, postHref, tagHref, formatDate, readingMinutes } from '../lib/posts';
+const posts = await getPosts();
+const featured = posts.find(post => post.data.featured) ?? posts[0];
+const recent = posts.filter(post => post.id !== featured?.id).slice(0, 4);
+const tags = getTags(posts);
+---
+<BaseLayout>
+  <div class="container home-intro">
+    <section class="home-profile">
+      <div class="eyebrow">PERSONAL NOTES / 嘉凯</div>
+      <h1>保持好奇，<br /><span>慢慢记录。</span></h1>
+      <p>{siteConfig.intro}<br />这里是我的文字，也是一份可以回看的记录。</p>
+      <a class="text-link" href="/about/">认识一下我</a>
+    </section>
+    {featured ? <article class="featured-post">
+      <div class="featured-label">{featured.data.featured ? 'PINNED / 置顶文章' : 'LATEST / 最新文章'}</div>
+      <h2><a href={postHref(featured)}>{featured.data.title}</a></h2>
+      <p>{featured.data.description}</p>
+      <div class="post-meta"><time datetime={featured.data.publishedAt.toISOString()}>{formatDate(featured.data.publishedAt)}</time><span>·</span><span>{readingMinutes(featured)} 分钟阅读</span>{featured.data.example && <span class="example-label">示例</span>}</div>
+    </article> : <section class="featured-post"><div class="featured-label">NOTES / 记录</div><h2>第一篇，从这里开始。</h2><p>暂时还没有公开的文章。</p></section>}
+  </div>
+  <section class="container recent-section list-grid">
+    <div>
+      <div class="section-heading"><h2>最新文章</h2><a href="/posts/">查看全部 · {posts.length} 篇</a></div>
+      <div>{recent.map(post => <PostCard post={post} />)}</div>
+      {recent.length === 0 && <p class="empty-state">暂时没有其他文章。</p>}
+    </div>
+    <aside class="side-section" aria-label="博客信息">
+      <h2>按主题阅读</h2>
+      {tags.length > 0 ? <ul class="side-tag-list">{tags.map(tag => <li><a href={tagHref(tag.name)}>{tag.name}<span>{String(tag.count).padStart(2, '0')}</span></a></li>)}</ul> : <p>文章发布后，标签会出现在这里。</p>}
+      <div class="side-divider"></div>
+      <div class="side-note"><h2>把更新带走</h2><p>用你喜欢的阅读器订阅，按自己的节奏阅读。</p><a class="text-link" href="/rss.xml">RSS 订阅</a></div>
+    </aside>
+  </section>
+</BaseLayout>

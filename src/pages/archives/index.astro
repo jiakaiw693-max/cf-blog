@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, postHref, formatDate, type Post } from '../../lib/posts';
+const posts = await getPosts();
+const groups = new Map<string, Post[]>();
+for (const post of posts) {
+  const year = new Intl.DateTimeFormat('en', { year: 'numeric', timeZone: 'Asia/Shanghai' }).format(post.data.publishedAt);
+  groups.set(year, [...(groups.get(year) ?? []), post]);
+}
+---
+<BaseLayout title="时间归档">
+  <div class="reading-container page">
+    <header class="page-heading"><div class="eyebrow">ARCHIVE / {String(posts.length).padStart(2, '0')} POSTS</div><h1>时间归档</h1><p>沿着时间往回看，一共留下了 {posts.length} 篇文章。</p></header>
+    {[...groups].map(([year, entries]) => <section class="archive-year"><h2>{year}</h2><ul>{entries.map(post => <li><time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt).slice(5)}</time><a href={postHref(post)}>{post.data.title}</a></li>)}</ul></section>)}
+    {posts.length === 0 && <p class="empty-state">暂时还没有公开的文章。</p>}
+  </div>
+</BaseLayout>

@@ -1,0 +1,6 @@
+---
+import { tagHref } from '../lib/posts';
+interface Props { tags: string[]; }
+const { tags } = Astro.props;
+---
+{tags.length > 0 && <ul class="tag-list" aria-label="文章标签">{[...new Set(tags)].map(tag => <li><a href={tagHref(tag)}>{tag}</a></li>)}</ul>}
