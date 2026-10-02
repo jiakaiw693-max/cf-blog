@@ -36,17 +36,27 @@ await cp(resolve(root, 'public'), out, { recursive: true });
 
 function head(title, description, path = '/') {
   return `<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0f10"><meta name="description" content="${esc(description)}">
+  <meta name="theme-color" content="#f5f6ee"><meta name="color-scheme" content="light dark"><meta name="description" content="${esc(description)}">
   <meta property="og:type" content="${path?.startsWith('/notes/') ? 'article' : 'website'}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:locale" content="zh_CN">
   ${base && path ? `<link rel="canonical" href="${esc(base + path)}"><meta property="og:url" content="${esc(base + path)}">` : ''}
-  <title>${esc(title)}</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script>`;
+  <title>${esc(title)}</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><script src="/theme.js"></script><link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script>`;
+}
+
+const themeIcons = {
+  light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  dark: '<path d="M20.4 14.1A8.7 8.7 0 0 1 9.9 3.6 8.7 8.7 0 1 0 20.4 14.1Z"/>',
+  system: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>'
+};
+const themeIcon = (mode, className = '') => `<svg class="${className}" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${themeIcons[mode]}</svg>`;
+function themeControl() {
+  return `<div class="theme-control"><button class="icon-button theme-toggle" type="button" aria-label="外观设置" aria-controls="theme-menu" aria-expanded="false" aria-haspopup="dialog">${themeIcon('light','theme-sun')}${themeIcon('dark','theme-moon')}<span class="theme-auto-dot" aria-hidden="true"></span></button><div class="theme-menu" id="theme-menu" role="dialog" aria-label="外观设置" hidden><div class="theme-menu-heading"><span>外观</span><span class="mono">APPEARANCE</span></div><div role="group" aria-label="选择主题">${[['light','浅色'],['dark','深色'],['system','跟随系统']].map(([mode,label])=>`<button type="button" class="theme-option" data-theme-choice="${mode}" aria-pressed="false">${themeIcon(mode)}<span>${label}</span><span class="theme-check" aria-hidden="true">✓</span></button>`).join('')}</div><p class="theme-menu-note">选择会保存在这个浏览器。</p></div><span class="theme-status sr-only" role="status" aria-live="polite"></span></div>`;
 }
 
 function header(home = false) {
   return `<a class="skip-link" href="#main">跳到正文</a><div class="scroll-progress" aria-hidden="true"></div><div class="pointer-glow" aria-hidden="true"></div><header class="site-header"><div class="container header-inner">
-    <a class="brand" href="/" aria-label="${esc(site.brand)}首页"><span class="brand-symbol" aria-hidden="true">b.</span><span>${esc(site.brand)}<small>BITDRIFT / PERSONAL SPACE</small></span></a>
+    <a class="brand" href="/" aria-label="${esc(site.brand)}首页"><span class="brand-symbol" aria-hidden="true">b.</span><span>${esc(site.brand)}<small>IDEAS IN ORBIT</small></span></a>
     <nav class="main-nav" aria-label="主导航" id="main-nav"><a href="${home ? '' : '/'}#focus" data-section="focus">关注</a><a href="${home ? '' : '/'}#notes" data-section="notes">手记</a><a href="${home ? '' : '/'}#directory" data-section="directory">网站导航</a><a href="${home ? '' : '/'}#about" data-section="about">关于</a><a class="nav-contact" href="${home ? '' : '/'}#contact" data-section="contact">联系我 <span aria-hidden="true">＋</span></a></nav>
-    <button class="menu-toggle" type="button" aria-controls="main-nav" aria-expanded="false" aria-label="打开导航"><span></span><span></span></button>
+    <div class="header-controls">${themeControl()}<button class="menu-toggle icon-button" type="button" aria-controls="main-nav" aria-expanded="false" aria-label="打开导航"><span></span><span></span></button></div>
   </div></header>`;
 }
 
@@ -54,7 +64,7 @@ function footer() {
   return `<footer class="site-footer"><div class="container footer-inner"><a class="footer-brand" href="/">${esc(site.brand)}<span class="mono">BITDRIFT</span></a><span>© ${new Date().getUTCFullYear()} ${esc(site.name)}<br><span class="footer-note">保持好奇，慢慢记录。</span></span><a class="back-top" href="#top">回到顶部 <span aria-hidden="true">↑</span></a></div></footer>`;
 }
 const focusMarkup = site.focuses.map(f => `<article class="focus-item hover-surface" data-reveal><div class="focus-top"><span class="mono">/${esc(f.number)}</span><span class="focus-cross" aria-hidden="true">+</span></div><h3>${esc(f.label)}</h3><p class="focus-en mono">${esc(f.en)}</p><p class="focus-text">${esc(f.text)}</p><div class="tags">${f.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div></article>`).join('');
-const notesMarkup = site.notes.map((n, i) => `<article class="note-row" data-reveal><div class="note-number mono">${String(i + 1).padStart(2, '0')}</div><div class="note-main"><div class="note-meta"><span class="category">${esc(n.category)}</span><time datetime="${esc(n.date)}">${dateLabel(n.date)}</time></div><h3><a href="/notes/${n.slug}/">${esc(n.title)}</a></h3><p>${esc(n.excerpt)}</p></div><a class="note-read" href="/notes/${n.slug}/" aria-label="阅读：${esc(n.title)}">阅读手记<span aria-hidden="true">＋</span></a></article>`).join('');
+const notesMarkup = site.notes.map((n, i) => `<article class="note-row" data-reveal><div class="note-number mono">${String(i + 1).padStart(2, '0')}</div><div class="note-main"><div class="note-meta"><span class="category">${esc(n.category)}</span><time datetime="${esc(n.date)}">${dateLabel(n.date)}</time></div><h3><a href="/notes/${n.slug}/">${esc(n.title)}</a></h3><p>${esc(n.excerpt)}</p></div><a class="note-read" href="/notes/${n.slug}/" aria-label="阅读：${esc(n.title)}">阅读手记<span aria-hidden="true">→</span></a></article>`).join('');
 const html = renderHome(site, { esc, head, header, footer, focusMarkup, notesMarkup });
 await writeFile(resolve(out, 'index.html'), html);
 

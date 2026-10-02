@@ -3,6 +3,45 @@ const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
 const toggle = document.querySelector('.menu-toggle');
 const nav = document.querySelector('.main-nav');
+const themeToggle = document.querySelector('.theme-toggle');
+const themeMenu = document.querySelector('.theme-menu');
+const themeChoices = [...document.querySelectorAll('[data-theme-choice]')];
+const themeStatus = document.querySelector('.theme-status');
+const themeNames = { light: '浅色', dark: '深色', system: '跟随系统' };
+function closeTheme(returnFocus = false) {
+  if (!themeMenu || !themeToggle) return;
+  themeMenu.hidden = true;
+  themeToggle.setAttribute('aria-expanded', 'false');
+  if (returnFocus) themeToggle.focus();
+}
+function syncTheme(announce = false) {
+  const preference = window.bitdriftTheme?.preference || 'system';
+  const resolved = document.documentElement.dataset.theme;
+  themeChoices.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeChoice === preference)));
+  const description = preference === 'system' ? `跟随系统，当前为${themeNames[resolved]}` : themeNames[preference];
+  if (themeToggle) themeToggle.title = `外观设置：${description}`;
+  if (announce && themeStatus) themeStatus.textContent = `外观已设为${description}。`;
+}
+themeToggle?.addEventListener('click', () => {
+  if (!themeMenu) return;
+  const open = themeMenu.hidden;
+  closeNav();
+  themeMenu.hidden = !open;
+  themeToggle.setAttribute('aria-expanded', String(open));
+  if (open) themeChoices.find(button => button.getAttribute('aria-pressed') === 'true')?.focus();
+});
+themeChoices.forEach(button => button.addEventListener('click', () => {
+  window.bitdriftTheme?.set(button.dataset.themeChoice);
+  closeTheme(true);
+}));
+window.addEventListener('bitdrift:themechange', () => syncTheme(true));
+document.addEventListener('click', event => {
+  if (!event.target.closest('.theme-control')) closeTheme();
+});
+document.querySelector('.theme-control')?.addEventListener('focusout', event => {
+  if (!event.currentTarget.contains(event.relatedTarget)) closeTheme();
+});
+syncTheme();
 function closeNav() {
   if (!toggle || !nav) return;
   toggle.setAttribute('aria-expanded','false');
@@ -10,6 +49,7 @@ function closeNav() {
   nav.classList.remove('is-open');
 }
 toggle?.addEventListener('click', () => {
+  closeTheme();
   const opened = toggle.getAttribute('aria-expanded') !== 'true';
   toggle.setAttribute('aria-expanded',String(opened));
   toggle.setAttribute('aria-label',opened ? '关闭导航' : '打开导航');
@@ -17,9 +57,10 @@ toggle?.addEventListener('click', () => {
 });
 nav?.querySelectorAll('a').forEach(link => link.addEventListener('click',closeNav));
 document.addEventListener('keydown',event => {
+  if (event.key === 'Escape' && themeMenu && !themeMenu.hidden) { closeTheme(true); return; }
   if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { closeNav(); toggle.focus(); }
 });
-matchMedia('(min-width: 681px)').addEventListener('change',closeNav);
+matchMedia('(min-width: 961px)').addEventListener('change',closeNav);
 document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click',async () => {
   const kind = button.dataset.copyKind;
   const status = document.querySelector(kind === 'email' ? '.email-status' : '.account-status');
