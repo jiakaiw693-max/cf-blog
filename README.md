@@ -1,10 +1,12 @@
 # 十点准时睡 · 比特漂流
 
-一个记录 AI、科技与硬件发现的个人网站。首页以编辑手记为视觉方向，采用米白纸面、炭黑文字与黄绿色点缀，配有原创生成的玻璃金属轨道球体图片。
+一个记录 AI、科技与硬件发现的个人网站。首页采用炭黑背景、冷白文字与青绿色点缀，配有玻璃金属轨道球体主视觉、柔光卡片和滚动入场效果。
 
-网站包含个人介绍、三个关注方向、三篇独立阅读页面、关于与联系区。适配手机和桌面，支持键盘导航、复制小红书账号名与真实 404 页面。正文随 HTML 输出，阅读内容无需等待 JavaScript。
+网站包含个人介绍、三个关注方向、三篇独立阅读页面、24 个常用网站入口、关于与联系区。网站导航支持分类和搜索，涵盖 AI、开发、设计与社区。联系区公开 QQ 邮箱 `766043204@qq.com`，支持发送邮件、复制邮箱与复制小红书账号名。
 
-首版个人介绍和三篇手记是本次制作撰写的初始内容。可在 `site.config.mjs` 里直接修改或删除。头像、私人邮箱与未经确认的个人履历均未加入网站。
+页面适配手机和桌面，支持键盘导航与真实 404 页面。鼠标倾斜、按钮跟随、滚动浮动、轨道旋转和跑马灯均可通过「暂停动态效果」按钮暂停；系统开启减少动态效果时自动使用静态模式。正文随 HTML 输出，阅读内容无需等待 JavaScript。
+
+首版个人介绍和三篇手记是本次制作撰写的初始内容，可在 `site.config.mjs` 里直接修改或删除。
 
 ## 配置到 Cloudflare Workers
 
@@ -36,11 +38,13 @@
 
 | 文件 | 用途 |
 | --- | --- |
-| `site.config.mjs` | 名字、品牌、个人简介、关注方向、手记与 GitHub 链接 |
+| `site.config.mjs` | 名字、品牌、个人简介、关注方向、手记、公开邮箱与 GitHub 链接 |
+| `site.links.mjs` | 24 个网站入口的名称、网址、分类、简介与图标颜色 |
 | `public/styles.css` | 配色、字体、排版与响应式样式 |
-| `public/app.js` | 手机导航和复制账号功能 |
+| `public/app.js` | 手机导航、网站筛选、复制功能与可暂停的动态效果 |
 | `public/assets/bitdrift-orb.webp` | 首页主视觉 |
 | `scripts/build.mjs` | 生成首页、手记页面、404 与可选 sitemap |
+| `scripts/home.mjs` | 首页结构与网站导航卡片 |
 | `wrangler.jsonc` | Cloudflare Workers 名称和静态资源配置 |
 
 新增手记时，在 `notes` 数组里添加一项，提供唯一的英文 `slug`、分类、日期、标题、摘要和 `paragraphs`。每篇手记自动生成 `/notes/slug/` 页面。当前采用手动发布，配置中的所有手记都会进入网站；准备好内容后再添加到该数组。
@@ -69,4 +73,3 @@ npx wrangler deploy --dry-run
 - [Workers 与 Git 仓库集成](https://developers.cloudflare.com/workers/ci-cd/builds/)
 - [Workers 构建设置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
 - [静态路由与 404 页面](https://developers.cloudflare.com/workers/static-assets/routing/static-site-generation/)
-

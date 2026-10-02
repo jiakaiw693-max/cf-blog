@@ -1,3 +1,4 @@
+import websites from './site.links.mjs';
 // 修改此文件后，运行 npm run build，或提交到已连接 Cloudflare 的 GitHub 仓库。
 export default {
   name: '十点准时睡',
@@ -7,6 +8,8 @@ export default {
   // 部署后可填写完整域名，例如 https://example.com；用于 canonical 与 sitemap。
   url: '',
   github: 'https://github.com/jiakaiw693-max',
+  email: '766043204@qq.com',
+  websites,
   socialAccount: '比特漂流',
   introduction: '我是十点准时睡，也是「比特漂流」的内容创作者。关注 AI、科技与硬件，喜欢把复杂的事情讲清楚，也把自己的观察留在这里。',
   about: [
