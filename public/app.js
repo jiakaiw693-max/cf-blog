@@ -67,6 +67,7 @@ document.querySelectorAll('[data-copy]').forEach(button => button.addEventListen
   try {
     await navigator.clipboard.writeText(button.dataset.copy);
     if (status) status.textContent = kind === 'email' ? `邮箱已复制：${button.dataset.copy}` : '账号名已复制。打开小红书搜索即可。';
+    window.dispatchEvent(new CustomEvent('bitdrift:copied', { detail: { button } }));
   } catch { if (status) status.textContent = `请选中复制：${button.dataset.copy}`; }
 }));
 

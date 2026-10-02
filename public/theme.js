@@ -14,7 +14,7 @@
     root.dataset.theme = theme;
     root.dataset.themeMode = preference;
     root.classList.add('theme-enabled');
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#080d0c' : '#f5f6ee');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#070b14' : '#f3f6fc');
     window.dispatchEvent(new CustomEvent('bitdrift:themechange', { detail: { preference, theme } }));
   }
   window.bitdriftTheme = Object.freeze({
