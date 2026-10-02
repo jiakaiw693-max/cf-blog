@@ -1,9 +1,0 @@
----
-import Icon from './Icon.astro';
-import type { Post } from '../lib/posts';
-interface Props { post: Post; compact?: boolean; }
-const { post, compact = false } = Astro.props;
----
-<button type="button" class:list={['save-button', { 'save-button-compact': compact }]} data-save-post={post.id} data-post-title={post.data.title} aria-label={`收藏：${post.data.title}`} aria-pressed="false" title="收藏到稍后读">
-  <Icon name="bookmark" size={17} /><span class:list={['save-label', { 'sr-only': compact }]}>稍后读</span>
-</button>

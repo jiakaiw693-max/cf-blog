@@ -1,10 +1,11 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  // 改成 Cloudflare 控制台中对应的 Worker 名称。
   "name": "cf-blog",
   "compatibility_date": "2026-10-02",
   "assets": {
     "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
-  }
+  },
+  "observability": { "enabled": true }
 }

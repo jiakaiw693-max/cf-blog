@@ -1,27 +1,15 @@
 {
-  "name": "cf-blog",
+  "name": "bitdrift-personal-site",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.12.0" },
+  "description": "十点准时睡 · 比特漂流的个人主页",
   "scripts": {
-    "dev": "astro dev --host 0.0.0.0",
-    "check": "astro check",
     "build": "node scripts/build.mjs",
-    "build:local": "node scripts/build.mjs --local",
-    "preview": "astro preview --host 0.0.0.0",
-    "preview:worker": "wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "check": "node scripts/build.mjs && node scripts/check.mjs"
   },
-  "dependencies": {
-    "astro": "7.3.5",
-    "@astrojs/rss": "4.0.19",
-    "@astrojs/sitemap": "3.7.4"
-  },
-  "devDependencies": {
-    "@astrojs/check": "^0.9.9",
-    "typescript": "^5.9.3",
-    "pagefind": "1.5.2",
-    "wrangler": "4.146.0"
-  }
+  "engines": { "node": ">=22" },
+  "devDependencies": { "wrangler": "4.146.0" }
 }

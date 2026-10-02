@@ -1,7 +1,0 @@
----
-import PostsListing from '../../components/PostsListing.astro';
-import { getPosts } from '../../lib/posts';
-import { siteConfig } from '../../config';
-const posts = await getPosts();
----
-<PostsListing posts={posts.slice(0, siteConfig.postsPerPage)} allPosts={posts} pageNumber={1} totalPages={Math.max(1, Math.ceil(posts.length / siteConfig.postsPerPage))} />
