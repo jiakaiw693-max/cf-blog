@@ -44,7 +44,7 @@ npm run build:local
 npm run preview
 ```
 
-`build:local` 允许未配置站点地址时使用本地地址。正式构建 `npm run build` 要求先设置 `SITE_URL`，避免生成错误的 RSS 和 canonical 链接。
+`build:local` 允许未配置站点地址时使用本地地址。Workers 的正式构建 `npm run build` 要求先设置 `SITE_URL`，避免生成错误的 RSS 和 canonical 链接。Pages 构建未设置 `SITE_URL` 时，会自动使用 Cloudflare 提供的 `CF_PAGES_URL`；设置了 `SITE_URL` 则优先使用它。
 
 本地也可以将 `.env.example` 复制为 `.env`，填入站点地址。`.env` 不会被提交到 Git。
 
@@ -87,6 +87,14 @@ npm run preview
 访问首页、任意文章和中文标签页；在搜索页面尝试搜索“科技”或“笔记”；查看 `/rss.xml` 和 `/sitemap-index.xml` 的链接是否使用你的正式域名；访问一个不存在的路径，确认返回 404 页面。
 
 如果之后绑定自定义域名，把 `SITE_URL` 改成自定义域名，然后重新构建部署一次。域名的 DNS 和绑定设置在 Cloudflare 控制台完成。
+
+## 已有 Pages 项目的构建兼容
+
+仓库的推荐部署方式仍是上面的 Workers。如果 GitHub 检查显示 `Cloudflare Pages`，说明连接的是 Pages 项目。现有 Pages 项目也可以构建本博客：根目录使用仓库根目录，构建命令为 `npm run build`，输出目录为 `dist`，Node.js 使用 `24`。Pages 自动上传输出目录，无需填写或运行 `wrangler deploy`。
+
+Pages 中未设置 `SITE_URL` 时，构建会使用自动注入的 `CF_PAGES_URL`。该地址可能是本次部署的预览地址；绑定自定义域名后，建议设置 `SITE_URL` 为稳定的正式根地址，再重新构建。切换到 Workers 时，需要按上面的 Workers 步骤创建或连接 Worker，代码提交不会自动把 Pages 项目转成 Worker。
+
+如果仍然失败，先确认日志中的失败阶段：依赖安装需核对 Node.js 版本；`缺少网站地址` 需核对构建环境变量；找不到 `dist` 需核对构建命令和输出目录。Cloudflare 的真实部署结果以控制台日志为准，本地构建或部署预检不代表已上线。
 
 ## 修改个人资料和外观
 

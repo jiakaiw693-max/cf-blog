@@ -24,7 +24,7 @@ npm run build:local
 npx wrangler deploy --dry-run
 ```
 
-`build:local` 可以使用本地地址。正式 `npm run build` 必须设置网站完整根地址 `SITE_URL`，它是构建变量，不是 Worker 运行时变量。构建先生成 Astro 页面，再生成 Pagefind 索引。
+`build:local` 可以使用本地地址。正式 `npm run build` 在 Workers 中必须设置网站完整根地址 `SITE_URL`；Pages 中未设置时使用 Cloudflare 注入的 `CF_PAGES_URL`。显式 `SITE_URL` 优先。它们是构建变量，不是 Worker 运行时变量。构建先生成 Astro 页面，再生成 Pagefind 索引。
 
 更改文章公开规则时，同时检查文章页、标签、归档、RSS、站点地图和搜索索引。更改页面交互时，检查手机布局、键盘操作和浅色/深色模式。
 
