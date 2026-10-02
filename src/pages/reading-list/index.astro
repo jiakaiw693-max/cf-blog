@@ -9,7 +9,7 @@ const posts = await getPosts();
   <div class="reading-container page" data-reading-list>
     <header class="page-heading"><div class="eyebrow">A LITTLE TIME FOR LATER</div><h1>留给稍后读</h1><p>遇见喜欢的文字，先留下，等一个空闲的时刻。</p></header>
     <div class="saved-toolbar"><p id="saved-status" role="status" aria-live="polite">正在读取收藏…</p><button class="quiet-button" id="clear-saved" type="button" hidden>清空收藏</button></div>
-    <div class="posts-stack">{posts.map(post => <div data-saved-id={post.id} hidden><PostCard post={post} /></div>)}</div>
+    <div class="posts-stack">{posts.map((post, index) => <div data-saved-id={post.id} hidden><PostCard post={post} number={posts.length - index} /></div>)}</div>
     <div class="saved-empty" data-saved-empty hidden><span class="empty-icon"><Icon name="bookmark" size={30} /></span><h2>这里，等着你的第一篇收藏。</h2><p>点击文章旁的书签图标，就能把它留在这里。</p><a class="button button-primary" href="/posts/">去找一篇文章 <Icon name="arrow" size={17} /></a></div>
     <p class="privacy-note">收藏只保存在当前浏览器，不会上传，也不会跨设备同步。清除浏览器数据后，收藏会随之移除。</p>
     <noscript><p class="empty-state">查看收藏需要启用 JavaScript。也可以直接浏览 <a href="/posts/">全部文章</a>。</p></noscript>

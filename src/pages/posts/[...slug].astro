@@ -8,14 +8,15 @@ import Icon from '../../components/Icon.astro';
 import { getPosts, postHref, formatDate, readingMinutes, type Post } from '../../lib/posts';
 export async function getStaticPaths() {
   const posts = await getPosts();
+  const numbers = Object.fromEntries(posts.map((post, index) => [post.id, posts.length - index]));
   return posts.map((post, index) => ({
     params: { slug: post.id },
-    props: { post, previous: posts[index + 1] ?? null, next: posts[index - 1] ?? null,
+    props: { post, numbers, previous: posts[index + 1] ?? null, next: posts[index - 1] ?? null,
       related: posts.filter(entry => entry.id !== post.id).map(entry => ({ entry, score: entry.data.tags.filter(tag => post.data.tags.includes(tag)).length })).sort((a, b) => b.score - a.score).slice(0, 2).map(item => item.entry) },
   }));
 }
-interface Props { post: Post; previous: Post | null; next: Post | null; related: Post[]; }
-const { post, previous, next, related } = Astro.props;
+interface Props { post: Post; numbers: Record<string, number>; previous: Post | null; next: Post | null; related: Post[]; }
+const { post, numbers, previous, next, related } = Astro.props;
 const { Content, headings } = await render(post);
 const toc = headings.filter(heading => heading.depth === 2 || heading.depth === 3);
 ---
@@ -26,7 +27,7 @@ const toc = headings.filter(heading => heading.depth === 2 || heading.depth === 
     <div class="article-grid">
       <article data-pagefind-body data-pagefind-meta={`postId:${post.id}`}>
         <header class="article-header">
-          <TagList tags={post.data.tags} filter />
+          <div class="article-kicker"><span class="eyebrow">FIELD NOTE / N° {String(numbers[post.id]).padStart(2, '0')}</span><TagList tags={post.data.tags} filter /></div>
           <h1 data-pagefind-meta="title">{post.data.title}</h1>
           <p class="article-description">{post.data.description}</p>
           <div class="post-meta article-meta"><time datetime={post.data.publishedAt.toISOString()} data-pagefind-meta="date[datetime]" data-pagefind-sort={`date:${post.data.publishedAt.getTime()}`}>{formatDate(post.data.publishedAt)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{post.data.updatedAt && <span>更新于 {formatDate(post.data.updatedAt)}</span>}{post.data.example && <span class="example-label">示例文章</span>}</div>
@@ -38,6 +39,6 @@ const toc = headings.filter(heading => heading.depth === 2 || heading.depth === 
       </article>
       {toc.length > 0 && <aside class="toc" aria-label="文章目录" data-pagefind-ignore><details class="toc-details"><summary><span>本文目录</span><span class="toc-percent" aria-hidden="true">0%</span></summary><ul>{toc.map(heading => <li class:list={{ 'level-3': heading.depth === 3 }}><a href={`#${encodeURIComponent(heading.slug)}`}>{heading.text}</a></li>)}</ul></details><p class="toc-note">慢一点读，也没关系。</p></aside>}
     </div>
-    {related.length > 0 && <section class="related-section" data-pagefind-ignore><div class="section-heading"><div><span class="eyebrow">KEEP EXPLORING</span><h2>接着读一读</h2></div><a href="/posts/">全部文章 ↗</a></div><div class="related-grid">{related.map(entry => <PostCard post={entry} />)}</div></section>}
+    {related.length > 0 && <section class="related-section" data-pagefind-ignore><div class="section-heading"><div><span class="eyebrow">KEEP EXPLORING</span><h2>接着读一读</h2></div><a href="/posts/">全部文章 ↗</a></div><div class="related-grid">{related.map(entry => <PostCard post={entry} number={numbers[entry.id]} />)}</div></section>}
   </div>
 </BaseLayout>

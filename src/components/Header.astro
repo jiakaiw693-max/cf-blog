@@ -7,7 +7,7 @@ const active = (href: string) => href === '/' ? pathname === '/' : pathname.star
 ---
 <header class="site-header" data-pagefind-ignore>
   <div class="container header-inner">
-    <a class="brand" href="/" aria-label={`${siteConfig.title}，首页`}><span class="brand-mark" aria-hidden="true">jk<span>✳</span></span><span class="brand-name">{siteConfig.title}<span class="brand-note">A SMALL DIGITAL GARDEN</span></span></a>
+    <a class="brand" href="/" aria-label={`${siteConfig.title}，首页`}><span class="brand-mark" aria-hidden="true">jk<span>✳</span></span><span class="brand-name">{siteConfig.title}<span class="brand-note">PERSONAL FIELD NOTES</span></span></a>
     <nav id="site-nav" class="site-nav" aria-label="主导航">
       {links.map(({ href, label }) => <a href={href} class:list={{ active: active(href) }} aria-current={active(href) ? 'page' : undefined}>{label}</a>)}
       <a class="mobile-saved-link" href="/reading-list/">稍后读 <span data-saved-count hidden>0</span></a>

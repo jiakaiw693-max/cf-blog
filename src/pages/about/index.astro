@@ -2,9 +2,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 <BaseLayout title="关于我" description="我是嘉凯，一名对数码产品和科技保持好奇的大学生。这里记录学习与日常。">
-  <div class="reading-container page">
+  <div class="container page about-page">
     <header class="page-heading"><div class="eyebrow">ABOUT / HELLO</div><h1>你好，我是嘉凯。</h1><p>一个对科技保持好奇，也想认真记录日常的人。</p></header>
-    <div class="prose">
+    <div class="about-intro-grid"><div class="prose">
       <p>我是一名大学生，对数码产品、硬件和科技感兴趣。这个博客是我留给自己的一个小地方，用来整理学习中的想法，也记录生活里值得记住的片段。</p>
       <h2>这里会写什么</h2>
       <p>关于数码和科技，关于学习时遇到的问题，也关于日常里的一些观察。文章不一定很长，但希望每次写下来，都能把一个问题想得更清楚一点。</p>
@@ -12,6 +12,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <p>很多想法在当时很清楚，过一阵就模糊了。我想把它们留在这里，让以后回看的自己知道，当时为什么这样想，又是怎样一点点改变的。</p>
       <h2>保持联系</h2>
       <p>你可以通过 <a href="/rss.xml">RSS</a> 订阅文章更新，也可以从 <a href="/posts/">文章列表</a> 找到感兴趣的内容。</p>
-    </div>
+    </div><aside class="about-card" aria-label="个人简介"><div class="about-monogram" aria-hidden="true">jk.</div><span class="eyebrow">THE PERSON BEHIND THE NOTES</span><h2>嘉凯 / JIAKAI</h2><p>大学生。喜欢科技，也关心生活里小小的细节。</p><div class="about-card-tags"><span>数码与科技</span><span>学习与思考</span><span>日常观察</span></div></aside></div>
   </div>
 </BaseLayout>

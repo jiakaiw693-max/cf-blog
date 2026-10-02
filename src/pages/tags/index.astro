@@ -1,12 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import CoverArt from '../../components/CoverArt.astro';
 import { getPosts, getTags, tagHref } from '../../lib/posts';
 const tags = getTags(await getPosts());
 ---
 <BaseLayout title="文章标签">
   <div class="container page">
     <header class="page-heading"><div class="eyebrow">TOPICS / {String(tags.length).padStart(2, '0')} TAGS</div><h1>按主题阅读</h1><p>从一个感兴趣的话题开始，找到相关的文章。</p></header>
-    <ul class="tag-cloud">{tags.map(tag => <li><a href={tagHref(tag.name)}>{tag.name}<span class="count">{tag.count}</span></a></li>)}</ul>
+    <ul class="tag-cloud">{tags.map((tag, index) => <li><a href={tagHref(tag.name)}><div class="topic-art"><CoverArt seed={tag.name} /></div><div class="topic-card-body"><div><span class="topic-index">TOPIC / {String(index + 1).padStart(2, '0')}</span><strong>{tag.name}</strong><span class="count">{tag.count} 篇手记</span></div><span class="topic-card-arrow" aria-hidden="true">↗</span></div></a></li>)}</ul>
     {tags.length === 0 && <p class="empty-state">暂时还没有标签。</p>}
   </div>
 </BaseLayout>

@@ -1,0 +1,17 @@
+---
+interface Props { seed?: string; variant?: 'orbit' | 'steps' | 'signal'; }
+const { seed = '', variant } = Astro.props;
+const motifs = ['orbit', 'steps', 'signal'] as const;
+let hash = 2166136261;
+for (const character of seed) hash = Math.imul(hash ^ (character.codePointAt(0) ?? 0), 16777619) >>> 0;
+const motif = variant ?? motifs[hash % motifs.length];
+const captions = { orbit: 'OPEN QUESTIONS', steps: 'ONE STEP AT A TIME', signal: 'THOUGHTS IN PROGRESS' };
+---
+<div class:list={['cover-art', `cover-art-${motif}`]} aria-hidden="true">
+  <svg class="cover-graphic" viewBox="0 0 240 180" fill="none">
+    {motif === 'orbit' && <><circle class="cover-fill" cx="121" cy="89" r="48" /><circle class="cover-line" cx="121" cy="89" r="66" /><ellipse class="cover-line" cx="121" cy="89" rx="100" ry="29" transform="rotate(-28 121 89)" /><circle class="cover-dot" cx="193" cy="49" r="8" /><path class="cover-line" d="M22 136h20m-10-10v20" /></>}
+    {motif === 'steps' && <><path class="cover-fill" d="M35 139V99h40V69h40V39h40v100H35Z" /><path class="cover-line" d="M35 151V111h40V81h40V51h40V21M155 139h47M35 99l40 40m0-70 40 70m0-100 40 100" /><circle class="cover-dot" cx="184" cy="51" r="21" /><path class="cover-line" d="m173 51 8 8 16-17" /></>}
+    {motif === 'signal' && <><circle class="cover-fill" cx="120" cy="89" r="61" /><path class="cover-line" d="M18 91h42l17-35 26 70 27-81 23 61 14-15h55M33 31h16m-8-8v16m139 105h22" /><circle class="cover-dot" cx="181" cy="38" r="7" /><path class="cover-line" d="M41 141h38m0 0-9-9m9 9-9 9" /></>}
+  </svg>
+  <span class="cover-caption">{captions[motif]}</span>
+</div>
