@@ -1,4 +1,4 @@
-import { SpaceSound } from './sound.js';
+import { SpaceSound, SOUND_TRACKS } from './sound.js';
 
 const root = document.documentElement;
 const dialog = document.querySelector('.command-dialog');
@@ -12,13 +12,13 @@ let matches = indexed;
 let selected = 0;
 let returnFocus;
 
-function closeTransientPanels() {
+function closeTransientPanels(keepSound = false) {
   const menu = document.querySelector('.theme-menu');
   if (menu) menu.hidden = true;
   document.querySelector('.theme-toggle')?.setAttribute('aria-expanded', 'false');
   const navToggle = document.querySelector('.menu-toggle');
   if (navToggle?.getAttribute('aria-expanded') === 'true') navToggle.click();
-  closeSoundPanel();
+  if (!keepSound) closeSoundPanel();
 }
 function highlightName(name, query) {
   const span = document.createElement('span');
@@ -65,6 +65,7 @@ function renderResults() {
     option.addEventListener('click', () => {
       dialog.close();
       if (item.action === 'sound') toggleSound();
+      else if (item.action?.startsWith('track-')) changeTrack(item.action.slice(6), true);
       else if (item.action) window.bitdriftTheme?.set(item.action);
     });
     fragment.append(option);
@@ -152,7 +153,19 @@ window.addEventListener('bitdrift:copied', event => {
   state.timer = setTimeout(() => { state.target.textContent = state.label; button.classList.remove('is-copied'); }, 1600);
 });
 
-const sound = new SpaceSound({ volume: 0.22 });
+function readSoundPreferences() {
+  const defaults = { track: SOUND_TRACKS[0].id, volume: 0.22, previousVolume: 0.22 };
+  try {
+    const saved = JSON.parse(localStorage.getItem('bitdrift-radio') || '{}');
+    if (SOUND_TRACKS.some(track => track.id === saved?.track)) defaults.track = saved.track;
+    if (Number.isFinite(saved?.volume) && saved.volume >= 0 && saved.volume <= 1) defaults.volume = saved.volume;
+    if (Number.isFinite(saved?.previousVolume) && saved.previousVolume > 0 && saved.previousVolume <= 1) defaults.previousVolume = saved.previousVolume;
+    else if (defaults.volume > 0) defaults.previousVolume = defaults.volume;
+  } catch { }
+  return defaults;
+}
+const soundPreferences = readSoundPreferences();
+const sound = new SpaceSound({ volume: soundPreferences.volume, track: soundPreferences.track });
 const dock = document.querySelector('.sound-dock');
 const soundButton = document.querySelector('.sound-toggle');
 const soundPanel = document.querySelector('.sound-panel');
@@ -161,15 +174,83 @@ const soundStatus = document.querySelector('.sound-status');
 const volume = document.querySelector('.sound-volume');
 const volumeOutput = document.querySelector('.sound-volume-value');
 const mute = document.querySelector('.sound-mute');
+const seek = document.querySelector('.sound-seek');
+const trackButtons = [...document.querySelectorAll('[data-sound-track]')];
+const sectionLabel = document.querySelector('.sound-section');
 let playbackRequest = 0;
-let rememberedVolume = 0.22;
+let rememberedVolume = soundPreferences.previousVolume;
+let progressTimer = 0;
+let seeking = false;
+let seekDirty = false;
+let renderedWaveform = null;
+const formatTime = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+const trackInfo = () => SOUND_TRACKS.find(track => track.id === sound.track) || SOUND_TRACKS[0];
+function saveSoundPreferences() {
+  try { localStorage.setItem('bitdrift-radio', JSON.stringify({ track: sound.track, volume: sound.volume, previousVolume: rememberedVolume })); } catch { }
+}
+
+function stopProgress() { clearInterval(progressTimer); progressTimer = 0; }
+function updateProgress(seconds, force = false) {
+  if (seeking && !force) return;
+  const time = Math.max(0, Math.min(sound.duration, seconds ?? sound.currentTime));
+  const durationLabel = formatTime(Math.ceil(sound.duration));
+  seek.value = String(time);
+  seek.setAttribute('aria-valuetext', `${formatTime(time)}，共 ${durationLabel}`);
+  dock.querySelector('.sound-elapsed').textContent = formatTime(time);
+  dock.querySelector('.sound-dock-time').textContent = formatTime(time);
+  dock.querySelector('.sound-duration').textContent = durationLabel;
+  const progress = time / sound.duration;
+  dock.style.setProperty('--sound-progress', `${progress * 100}%`);
+  dock.style.setProperty('--sound-ratio', String(progress));
+  dock.querySelector('.sound-waveform-mask').setAttribute('width', String(progress * 288));
+  const section = sound.section;
+  if (sectionLabel.textContent !== section) sectionLabel.textContent = section;
+}
+function renderWaveform() {
+  const waveform = sound.waveform;
+  if (waveform === renderedWaveform) return;
+  renderedWaveform = waveform;
+  const base = dock.querySelector('.sound-waveform-base');
+  const played = dock.querySelector('.sound-waveform-played');
+  base.replaceChildren(); played.replaceChildren();
+  dock.querySelector('.sound-waveform').classList.toggle('has-waveform', Boolean(waveform));
+  if (!waveform) return;
+  waveform.forEach((level, i) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const x = (i + 0.5) * 288 / waveform.length;
+    const height = Math.max(2, level * 41);
+    line.setAttribute('x1', x); line.setAttribute('x2', x);
+    line.setAttribute('y1', (46 - height) / 2); line.setAttribute('y2', (46 + height) / 2);
+    base.append(line); played.append(line.cloneNode());
+  });
+}
+function startProgress() {
+  stopProgress(); updateProgress(); renderWaveform();
+  if (dock.dataset.state === 'playing' && !document.hidden) progressTimer = setInterval(updateProgress, 500);
+}
+function renderTrack() {
+  const track = trackInfo();
+  dock.dataset.track = track.id;
+  dock.style.setProperty('--sound-beat', `${60 / track.bpm}s`);
+  dock.querySelector('.sound-title').textContent = track.title;
+  dock.querySelector('.sound-dock-title').textContent = track.title;
+  dock.querySelector('.sound-description').textContent = track.subtitle;
+  dock.querySelector('.sound-bpm').textContent = `${track.bpm} BPM`;
+  trackButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.soundTrack === track.id)));
+  seek.max = String(sound.duration);
+  seeking = false; seekDirty = false;
+  renderWaveform(); updateProgress(undefined, true);
+}
 function setSoundState(state) {
   dock.dataset.state = state;
   const playing = state === 'playing';
   soundButton.setAttribute('aria-pressed', String(playing));
   soundButton.setAttribute('aria-busy', String(state === 'loading'));
-  soundButton.setAttribute('aria-label', playing ? '暂停太空电子音乐' : state === 'loading' ? '取消音乐播放' : '播放太空电子音乐');
-  dock.querySelector('.sound-state').textContent = playing ? '正在播放' : state === 'loading' ? '准备中…' : '点击播放';
+  const title = trackInfo().title;
+  soundButton.setAttribute('aria-label', playing ? `暂停${title}` : state === 'loading' ? '取消音乐播放' : `播放${title}`);
+  dock.querySelector('.sound-state').textContent = playing ? (sound.volume === 0 ? '静音中' : '正在播放') : state === 'loading' ? '准备中…' : sound.currentTime > 0 ? '已暂停' : '点击播放';
+  if (playing) startProgress();
+  else { stopProgress(); updateProgress(); }
 }
 function closeSoundPanel(returnFocus = false) {
   if (!soundPanel || !soundExpand) return;
@@ -177,41 +258,73 @@ function closeSoundPanel(returnFocus = false) {
   if (returnFocus) soundExpand.focus();
 }
 function openSoundPanel() {
+  closeTransientPanels(true);
   soundPanel.hidden = false; soundExpand.setAttribute('aria-expanded', 'true'); soundExpand.setAttribute('aria-label', '收起音乐控制');
+  renderWaveform(); updateProgress();
+  trackButtons.find(button => button.getAttribute('aria-pressed') === 'true')?.focus({ preventScroll: true });
 }
 async function toggleSound() {
   const request = ++playbackRequest;
-  if (sound.playing || dock.dataset.state === 'playing' || dock.dataset.state === 'loading') { sound.pause(); setSoundState('paused'); soundStatus.textContent = '音乐已暂停。'; return; }
+  if (sound.playing || dock.dataset.state === 'playing' || dock.dataset.state === 'loading') {
+    sound.pause(); setSoundState('paused'); soundStatus.textContent = '音乐已暂停。'; return;
+  }
   soundStatus.textContent = ''; setSoundState('loading');
   try {
     const started = await sound.play();
     if (request !== playbackRequest) return;
     setSoundState(started && sound.playing ? 'playing' : 'paused');
-    soundStatus.textContent = sound.playing ? '原创太空电子声景正在播放。' : '音乐已暂停。';
+    soundStatus.textContent = sound.playing ? `正在播放「${trackInfo().title}」。` : '音乐已暂停。';
   } catch {
     if (request !== playbackRequest) return;
     setSoundState('paused'); openSoundPanel(); soundStatus.textContent = '音乐暂时无法播放，请再点一次，或使用支持音频的浏览器。';
   }
 }
+function changeTrack(id, playNow = false) {
+  if (!SOUND_TRACKS.some(track => track.id === id)) return;
+  if (sound.track === id) { if (playNow && dock.dataset.state !== 'playing') { if (dock.dataset.state === 'loading') return; toggleSound(); } return; }
+  const resume = playNow || dock.dataset.state === 'playing' || dock.dataset.state === 'loading';
+  playbackRequest++; stopProgress(); seeking = false;
+  sound.setTrack(id); saveSoundPreferences(); renderTrack(); setSoundState('paused');
+  soundStatus.textContent = `已选择「${trackInfo().title}」。`;
+  if (resume) toggleSound();
+}
 soundButton?.addEventListener('click', toggleSound);
 soundExpand?.addEventListener('click', () => { if (soundPanel.hidden) openSoundPanel(); else closeSoundPanel(); });
 document.querySelector('.sound-panel-close')?.addEventListener('click', () => closeSoundPanel(true));
-function setVolume(value) {
+trackButtons.forEach(button => button.addEventListener('click', () => changeTrack(button.dataset.soundTrack)));
+document.querySelector('.sound-next')?.addEventListener('click', () => {
+  const index = SOUND_TRACKS.findIndex(track => track.id === sound.track);
+  changeTrack(SOUND_TRACKS[(index + 1) % SOUND_TRACKS.length].id);
+});
+function commitSeek() {
+  if (!seeking && !seekDirty) return;
+  const changed = seekDirty;
+  if (changed) sound.seek(Math.min(Number(seek.value), sound.duration - 0.03));
+  seeking = false; seekDirty = false; updateProgress(undefined, true);
+  if (changed && dock.dataset.state !== 'playing' && dock.dataset.state !== 'loading') setSoundState('paused');
+}
+seek?.addEventListener('pointerdown', () => { seeking = true; seekDirty = false; });
+seek?.addEventListener('input', () => { seeking = true; seekDirty = true; updateProgress(Number(seek.value), true); });
+seek?.addEventListener('change', commitSeek);
+window.addEventListener('pointerup', commitSeek);
+seek?.addEventListener('pointercancel', () => { seeking = false; seekDirty = false; updateProgress(); });
+seek?.addEventListener('blur', commitSeek);
+function setVolume(value, persist = true) {
   sound.setVolume(value);
   volume.value = String(Math.round(value * 100)); volumeOutput.textContent = `${Math.round(value * 100)}%`;
   mute.setAttribute('aria-pressed', String(value === 0)); mute.textContent = value === 0 ? '取消静音' : '静音';
   if (value > 0) rememberedVolume = value;
+  if (dock.dataset.state === 'playing') dock.querySelector('.sound-state').textContent = value === 0 ? '静音中' : '正在播放';
+  if (persist) saveSoundPreferences();
 }
 volume?.addEventListener('input', () => setVolume(Number(volume.value) / 100));
 mute?.addEventListener('click', () => setVolume(sound.volume > 0 ? 0 : rememberedVolume));
-document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && !soundPanel.hidden) closeSoundPanel(true);
-});
-document.addEventListener('click', event => {
-  if (!event.target.closest('.sound-dock')) closeSoundPanel();
-});
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !soundPanel.hidden) closeSoundPanel(true); });
+document.addEventListener('click', event => { if (!event.target.closest('.sound-dock')) closeSoundPanel(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopProgress(); else startProgress(); });
 window.addEventListener('pagehide', event => {
-  playbackRequest++; sound.pause(); setSoundState('paused');
+  playbackRequest++; seeking = false; sound.pause(); setSoundState('paused');
   if (!event.persisted) sound.dispose().catch(() => {});
 });
+setVolume(sound.volume, false); renderTrack(); setSoundState('paused');
 root.classList.add('experience-ready');
