@@ -165,7 +165,7 @@ function readSoundPreferences() {
   return defaults;
 }
 const soundPreferences = readSoundPreferences();
-const sound = new SpaceSound({ volume: soundPreferences.volume, track: soundPreferences.track });
+const sound = new SpaceSound({ volume: soundPreferences.volume, track: soundPreferences.track, audioElement: document.querySelector('.sound-audio') });
 const dock = document.querySelector('.sound-dock');
 const soundButton = document.querySelector('.sound-toggle');
 const soundPanel = document.querySelector('.sound-panel');
@@ -193,7 +193,7 @@ function stopProgress() { clearInterval(progressTimer); progressTimer = 0; }
 function updateProgress(seconds, force = false) {
   if (seeking && !force) return;
   const time = Math.max(0, Math.min(sound.duration, seconds ?? sound.currentTime));
-  const durationLabel = formatTime(Math.ceil(sound.duration));
+  const durationLabel = formatTime(Math.round(sound.duration));
   seek.value = String(time);
   seek.setAttribute('aria-valuetext', `${formatTime(time)}，共 ${durationLabel}`);
   dock.querySelector('.sound-elapsed').textContent = formatTime(time);
@@ -236,6 +236,10 @@ function renderTrack() {
   dock.querySelector('.sound-dock-title').textContent = track.title;
   dock.querySelector('.sound-description').textContent = track.subtitle;
   dock.querySelector('.sound-bpm').textContent = `${track.bpm} BPM`;
+  const source = dock.querySelector('.sound-source');
+  source.href = track.source;
+  source.textContent = track.artist;
+  dock.querySelector('.sound-jump').hidden = track.id !== 'neon';
   trackButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.soundTrack === track.id)));
   seek.max = String(sound.duration);
   seeking = false; seekDirty = false;
@@ -243,12 +247,12 @@ function renderTrack() {
 }
 function setSoundState(state) {
   dock.dataset.state = state;
-  const playing = state === 'playing';
+  const playing = state === 'playing' || state === 'buffering';
   soundButton.setAttribute('aria-pressed', String(playing));
-  soundButton.setAttribute('aria-busy', String(state === 'loading'));
+  soundButton.setAttribute('aria-busy', String(state === 'loading' || state === 'buffering'));
   const title = trackInfo().title;
   soundButton.setAttribute('aria-label', playing ? `暂停${title}` : state === 'loading' ? '取消音乐播放' : `播放${title}`);
-  dock.querySelector('.sound-state').textContent = playing ? (sound.volume === 0 ? '静音中' : '正在播放') : state === 'loading' ? '准备中…' : sound.currentTime > 0 ? '已暂停' : '点击播放';
+  dock.querySelector('.sound-state').textContent = state === 'buffering' ? '缓冲中…' : playing ? (sound.volume === 0 ? '静音中' : '正在播放') : state === 'loading' ? '加载音乐…' : sound.currentTime > 0 ? '已暂停' : '点击播放';
   if (playing) startProgress();
   else { stopProgress(); updateProgress(); }
 }
@@ -265,7 +269,7 @@ function openSoundPanel() {
 }
 async function toggleSound() {
   const request = ++playbackRequest;
-  if (sound.playing || dock.dataset.state === 'playing' || dock.dataset.state === 'loading') {
+  if (sound.playing || ['playing', 'buffering', 'loading'].includes(dock.dataset.state)) {
     sound.pause(); setSoundState('paused'); soundStatus.textContent = '音乐已暂停。'; return;
   }
   soundStatus.textContent = ''; setSoundState('loading');
@@ -282,7 +286,7 @@ async function toggleSound() {
 function changeTrack(id, playNow = false) {
   if (!SOUND_TRACKS.some(track => track.id === id)) return;
   if (sound.track === id) { if (playNow && dock.dataset.state !== 'playing') { if (dock.dataset.state === 'loading') return; toggleSound(); } return; }
-  const resume = playNow || dock.dataset.state === 'playing' || dock.dataset.state === 'loading';
+  const resume = playNow || ['playing', 'buffering', 'loading'].includes(dock.dataset.state);
   playbackRequest++; stopProgress(); seeking = false;
   sound.setTrack(id); saveSoundPreferences(); renderTrack(); setSoundState('paused');
   soundStatus.textContent = `已选择「${trackInfo().title}」。`;
@@ -295,6 +299,11 @@ trackButtons.forEach(button => button.addEventListener('click', () => changeTrac
 document.querySelector('.sound-next')?.addEventListener('click', () => {
   const index = SOUND_TRACKS.findIndex(track => track.id === sound.track);
   changeTrack(SOUND_TRACKS[(index + 1) % SOUND_TRACKS.length].id);
+});
+document.querySelector('.sound-jump')?.addEventListener('click', () => {
+  seeking = false; seekDirty = false;
+  sound.seek(120); updateProgress(undefined, true);
+  if (!['playing', 'buffering', 'loading'].includes(dock.dataset.state)) toggleSound();
 });
 function commitSeek() {
   if (!seeking && !seekDirty) return;
@@ -322,6 +331,13 @@ mute?.addEventListener('click', () => setVolume(sound.volume > 0 ? 0 : remembere
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && !soundPanel.hidden) closeSoundPanel(true); });
 document.addEventListener('click', event => { if (!event.target.closest('.sound-dock')) closeSoundPanel(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopProgress(); else startProgress(); });
+sound.subscribe(state => {
+  if (state === 'error') {
+    playbackRequest++; setSoundState('paused');
+    soundStatus.textContent = '音频加载失败，请检查连接后重试。';
+    openSoundPanel();
+  } else setSoundState(state);
+});
 window.addEventListener('pagehide', event => {
   playbackRequest++; seeking = false; sound.pause(); setSoundState('paused');
   if (!event.persisted) sound.dispose().catch(() => {});
