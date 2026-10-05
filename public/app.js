@@ -97,6 +97,21 @@ filters.forEach(button => button.addEventListener('click',() => {
 }));
 search?.addEventListener('input',updateDirectory);
 
+const noteFilters = [...document.querySelectorAll('[data-note-filter]')];
+const noteCards = [...document.querySelectorAll('[data-note-category]')];
+noteFilters.forEach(button => button.addEventListener('click', () => {
+  const category = button.dataset.noteFilter;
+  let count = 0;
+  noteFilters.forEach(filter => filter.setAttribute('aria-pressed', String(filter === button)));
+  noteCards.forEach(card => {
+    card.hidden = category !== 'all' && card.dataset.noteCategory !== category;
+    if (!card.hidden) count++;
+  });
+  const status = document.querySelector('.notes-count');
+  if (status) status.textContent = `${count} 篇手记`;
+  scheduleFrame();
+}));
+
 const revealElements = [...document.querySelectorAll('[data-reveal]')];
 let revealObserver;
 if (!motionPreference.matches && 'IntersectionObserver' in window) {

@@ -3,17 +3,19 @@ import { AUDIO_WAVEFORMS } from './audio/waveforms.js';
 const ACTIVATION_SILENCE = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YSADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 const LICENSE_URL = 'https://creativecommons.org/licenses/by/4.0/';
 export const SOUND_TRACKS = Object.freeze([
-  { id: 'neon', title: 'EDM Detection Mode', subtitle: '电子低音 · 重拍律动', mood: '电子 · 驱动', bpm: 128, duration: 365.688187,
-    src: '/audio/edm-detection-mode.mp3', artist: 'Kevin MacLeod', source: 'https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500026', license: 'CC BY 4.0', licenseUrl: LICENSE_URL },
-  { id: 'deep', title: 'Tech Live', subtitle: '合成器 · 科技氛围', mood: '合成器 · 律动', bpm: 124, duration: 228.440844,
-    src: '/audio/tech-live.mp3', artist: 'Kevin MacLeod', source: 'https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1700030', license: 'CC BY 4.0', licenseUrl: LICENSE_URL },
+  { id: 'just-a-fool', title: 'Just A Fool (feat. Zara Taylor)', subtitle: '女声电子流行 · Zara Taylor', mood: '女声 · 电子流行', collection: 'MIDNIGHT POP', year: '2019', duration: 211.252187, accent: '#ab9dff', highlight: { time: 56, label: '进入副歌' },
+    src: '/audio/just-a-fool.mp3', artist: 'Sascha Ende', source: 'https://ende.app/en/song/5132-just-a-fool-feat-zara-taylor', license: 'CC BY 4.0', licenseUrl: LICENSE_URL },
+  { id: 'love', title: 'Love', subtitle: '女声电子舞曲 · 合成器与律动', mood: '女声 · 电子舞曲', collection: 'CITY LIGHTS', year: '2016', duration: 228.466938, accent: '#83cfff', highlight: { time: 79, label: '进入律动段' },
+    src: '/audio/love.mp3', artist: 'Sascha Ende', source: 'https://ende.app/en/song/527-love', license: 'CC BY 4.0', licenseUrl: LICENSE_URL },
+  { id: 'impatient', title: 'Impatient (feat. Zara Taylor)', subtitle: '女声抒情 · 钢琴与电子氛围', mood: '女声 · 抒情', collection: 'AFTER HOURS', year: '2018', duration: 156.081625, accent: '#89d8bd',
+    src: '/audio/impatient.mp3', artist: 'Sascha Ende', source: 'https://ende.app/en/song/3006-impatient-feat-zara-taylor', license: 'CC BY 4.0', licenseUrl: LICENSE_URL },
 ].map(track => Object.freeze(track)));
 
 const clamp = (value, max) => Math.max(0, Math.min(max, Number.isFinite(value) ? value : 0));
 
 // 完整音频由本网站提供。媒体事件同步浮窗状态，旧播放请求不能重新启动声音。
 export class SpaceSound {
-  constructor({ track = 'neon', volume = 0.22, audioElement = null, fetchAudio = (url, options) => fetch(url, options) } = {}) {
+  constructor({ track = SOUND_TRACKS[0].id, volume = 0.22, audioElement = null, fetchAudio = (url, options) => fetch(url, options) } = {}) {
     this._track = SOUND_TRACKS.some(item => item.id === track) ? track : SOUND_TRACKS[0].id;
     this.volume = clamp(volume, 1);
     this._audio = audioElement;
@@ -30,6 +32,7 @@ export class SpaceSound {
     this._cache = new Map();
     this._controller = null;
     this._fileBound = false;
+    this.repeat = false;
   }
   get info() { return SOUND_TRACKS.find(item => item.id === this._track); }
   get track() { return this._track; }
@@ -47,7 +50,7 @@ export class SpaceSound {
     if (this._ready) return this._audio;
     const audio = this._audio || new Audio();
     this._audio = audio;
-    audio.preload = 'none'; audio.loop = true; audio.volume = this.volume;
+    audio.preload = 'none'; audio.loop = this.repeat; audio.volume = this.volume;
     const listen = (event, fn) => { audio.addEventListener(event, fn); this._listeners.push([event, fn]); };
     listen('loadedmetadata', () => {
       if (!this._fileBound) return;
@@ -60,12 +63,17 @@ export class SpaceSound {
     listen('playing', () => { if (this._wanted && this._fileBound && !audio.paused) this._notify('playing'); else if (!this._wanted) audio.pause(); });
     listen('waiting', () => { if (this._wanted && this._fileBound && !audio.paused) this._notify('buffering'); });
     listen('pause', () => {
+      if (audio.ended) return;
       if (audio.paused && ['playing', 'buffering'].includes(this._state) && this._wanted) { this._wanted = false; this._request++; }
       if (!this._wanted) this._notify('paused');
     });
     listen('error', () => {
       if (!this._fileBound || !audio.error || !audio.hasAttribute('src')) return;
       this._wanted = false; this._request++; audio.pause(); this._notify('error');
+    });
+    listen('ended', () => {
+      if (!this._wanted || !this._fileBound || !audio.ended) return;
+      this._wanted = false; this._position = 0; this._notify('ended');
     });
     this._ready = true;
     return audio;
@@ -130,6 +138,7 @@ export class SpaceSound {
     else this._pendingSeek = position;
   }
   setVolume(volume) { this.volume = clamp(volume, 1); if (this._audio) this._audio.volume = this.volume; }
+  setRepeat(repeat) { this.repeat = Boolean(repeat); if (this._audio) this._audio.loop = this.repeat; }
   async dispose() {
     this.pause(); this._disposed = true;
     if (this._audio) {

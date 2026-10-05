@@ -22,8 +22,98 @@ export default {
     { number: '02', label: '硬件体验', en: 'HARDWARE & EXPERIENCE', text: '留意设备如何影响日常体验，把参数放回真实的使用场景。', tags: ['消费电子', '外设', '智能穿戴'] },
     { number: '03', label: '科技观察', en: 'TECHNOLOGY & CULTURE', text: '跟进软件、云服务和科技行业里的变化，寻找值得多看一眼的细节。', tags: ['软件', '隐私', '行业动态'] }
   ],
-  // 以下是为首版网站撰写的手记，可在此编辑、删除或添加文章。
+  explorations: [
+    { id: 'ai', number: '01', label: 'AI / PRACTICE', title: '把 AI 用到手头的事', description: '从整理资料开始，为输出留一条能回查的线索。', accent: '#77c8ff', note: 'rag-with-evidence', sites: ['DeepSeek', 'ChatGPT', 'Hugging Face'], steps: ['写清任务', '寻找依据', '核对结果'] },
+    { id: 'build', number: '02', label: 'WEB / BUILD', title: '搭建自己的网络空间', description: '认识页面、版本管理与部署，给自己的作品一个地址。', accent: '#b5a0ff', note: 'a-personal-site-that-lasts', sites: ['MDN', 'GitHub', 'Cloudflare'], steps: ['做出页面', '保存版本', '发布网站'] },
+    { id: 'hardware', number: '03', label: 'HARDWARE / INSIDE', title: '看懂设备里的细节', description: '从充电接口到维修结构，看看一台设备怎样工作。', accent: '#7bdbb4', note: 'usb-c-is-a-connector', sites: ['USB-IF', 'iFixit', 'Raspberry Pi'], steps: ['读懂规格', '观察结构', '动手尝试'] },
+    { id: 'reading', number: '04', label: 'READ / DISCOVER', title: '建立自己的科技阅读清单', description: '从报道读到原始资料，留下值得继续追问的问题。', accent: '#ffbe8e', note: 'a-small-rss-reading-list', sites: ['IEEE Spectrum', 'arXiv', 'Google Research'], steps: ['订阅来源', '回查资料', '记录想法'] }
+  ],
+  // 本站公开的编辑稿；日期表示文章在本站的发布时间。
   notes: [
+    {
+      slug: 'rag-with-evidence', category: 'AI', date: '2026-10-05',
+      title: '让 AI 输出有据可查',
+      excerpt: '认识检索增强生成：先找到相关资料，再检查回答与资料之间的对应关系。',
+      takeaway: '给出引用之后，仍要逐条核对结论、来源和适用条件。',
+      sections: [
+        { title: '从一次资料整理开始', paragraphs: ['假设要比较两款设备，可以先收集官网规格页和同一条件下的测试。给每份资料写上来源、日期与型号，再要求 AI 只依据这些材料整理表格。这个过程把回答所需的背景放在了眼前。', '检索增强生成通常简称 RAG。它会先从资料库找到与问题相关的内容，再把这些内容交给模型生成回答。资料库可以是几篇文档，也可以是一个更大的知识集合。'] },
+        { title: '引用能帮助定位，也需要核对', paragraphs: ['检索可能拿到过期文件，模型也可能把两个来源的条件混在一起。看到一句带引用的结论，继续打开原文，检查原文是否支持这句话，以及引用的型号和版本是否相符。', '一种实用的输出格式是“结论、对应原文、来源链接、待确认项”。当资料没有给出答案时，要求输出明确保留空缺。这样能把需要补查的部分留下来。'] },
+        { title: '用几个具体问题验收', paragraphs: ['先写下几个答案能够从原文直接找到的问题，再加一个资料没有覆盖的问题。检查系统能否准确引用，也观察它怎样处理空缺。测试时保留原问题和资料版本，方便下次重复比较。'] }
+      ],
+      checklist: ['为每份资料保存标题、日期与原链接。', '抽查关键数字和结论是否能在原文中找到。', '保留资料未覆盖的问题，继续补查。'],
+      sourcesReviewedAt: '2026-10-05',
+      sources: [{ title: 'Hugging Face：Advanced RAG', url: 'https://huggingface.co/learn/cookbook/en/advanced_rag' }]
+    },
+    {
+      slug: 'usb-c-is-a-connector', category: '硬件', date: '2026-10-05',
+      title: '同样是 USB-C，能力要分别看',
+      excerpt: '给充电、传输和外接屏幕分别列需求，再核对设备、线材与配件的支持范围。',
+      takeaway: '接口形状、充电能力和数据能力，需要分别确认。',
+      sections: [
+        { title: '先写出这根线要做什么', paragraphs: ['出门给手机充电、把照片复制到电脑、让笔记本接显示器，涉及的能力各有侧重。选择线材前，先写下自己的用途，然后读产品标明的充电功率、数据速率或视频支持。', 'USB-C 描述连接器的形状。USB Power Delivery 则用于协商供电。设备、充电器与线材共同影响可用的充电组合，USB-IF 的规格资料可以帮助理解这些术语。'] },
+        { title: '功率与速度各有条件', paragraphs: ['充电器的总功率还要结合各接口的分配规则来看。多口同时使用时，阅读厂商给出的分配表；为笔记本选配件，也要确认设备所需的供电档位。', '充电功率的标注不能说明文件传输速度。要复制大文件，就继续确认线材的数据规格和两端设备的接口能力。需要视频输出时，也要查电脑接口、线材或扩展坞支持的具体方式。'] },
+        { title: '把需求留在购买清单上', paragraphs: ['给常用设备做一张小表，记下型号、接口用途与兼容要求。比较配件时照着表检查；实际连接以后，用正常的工作任务确认充电、传输和显示都能完成。'] }
+      ],
+      checklist: ['确认设备与配件的具体型号。', '分别核对充电、数据传输与视频需求。', '查看多口充电器的同时使用规则。'],
+      sourcesReviewedAt: '2026-10-05',
+      sources: [{ title: 'USB-IF：USB Power Delivery', url: 'https://www.usb.org/usb-charger-pd' }]
+    },
+    {
+      slug: 'a-personal-site-that-lasts', category: '科技', date: '2026-10-05',
+      title: '一个个人网站怎样慢慢长大',
+      excerpt: '从能读的内容开始，逐步加上导航、主题和交互，并给每次修改留下版本。',
+      takeaway: '让内容、构建和发布各自有清楚的入口。',
+      sections: [
+        { title: '从一个能分享的页面开始', paragraphs: ['先准备简介、联系方式和一篇完整文章。用清楚的标题组织内容，再检查手机上的字号与行距。图片、动效和音乐可以随着内容逐步加入，每个新增控件都要保留键盘操作方式。', 'HTML 负责内容结构，CSS 负责排版与外观，JavaScript 负责交互。把文章直接输出到 HTML，可以让访问者在脚本加载期间开始阅读。MDN 的基础教程适合用来查这些概念。'] },
+        { title: '把修改保存成版本', paragraphs: ['代码放到 Git 仓库后，每次提交可以说明这次解决了什么问题。尝试新的配色或版式时，先保留当前可用版本，再检查修改后的手机布局和文章页。', '给名字、邮箱、文章和导航分别留一个容易修改的位置。页面模板从这些配置生成内容，新增文章就能一起进入首页、搜索索引和文章导航。'] },
+        { title: '发布以后仍然要检查', paragraphs: ['Cloudflare Workers Static Assets 可以分发构建后的 HTML、CSS、脚本与媒体文件。构建结果的资源路径、404 页面和文件大小，都应在发布前检查。正式上线之后，继续打开实际地址，确认资源能加载、链接能进入正确页面。', '从访问者最常做的事开始验收：读一篇文章，找到一个网站，切换主题，再尝试发邮件。每增加一个交互，就沿着这条路径重新走一遍。'] }
+      ],
+      checklist: ['在手机和桌面分别打开首页与文章。', '为每次修改保留可以回看的提交。', '上线后检查真实地址与 404 页面。'],
+      sourcesReviewedAt: '2026-10-05',
+      sources: [{ title: 'MDN：学习 Web 开发', url: 'https://developer.mozilla.org/zh-CN/docs/Learn_web_development' }, { title: 'Cloudflare：Workers Static Assets', url: 'https://developers.cloudflare.com/workers/static-assets/' }]
+    },
+    {
+      slug: 'a-small-rss-reading-list', category: '科技', date: '2026-10-05',
+      title: '建立一份能回查的阅读清单',
+      excerpt: '用订阅聚合更新，把值得保存的文章连同原始来源一起留下。',
+      takeaway: '阅读清单可以小一点，保存的线索要足够完整。',
+      sections: [
+        { title: '给每个来源安排一个用途', paragraphs: ['选择一份关注行业变化的报道、一份研究机构博客，再加一个与你正在学习的主题有关的社区。先用少量来源试一段时间，观察哪些内容能帮助你继续学习。', '有些网站提供 RSS 订阅地址。把地址添加到阅读器后，可以在一个地方看到各来源的更新。RSS 中通常包括标题、链接和内容摘要，实际提供多少正文由发布者决定。'] },
+        { title: '从报道回到资料', paragraphs: ['遇到一个新数字，先看报道是否给出原始论文或官方说明。论文里的数据要结合实验条件阅读，预印本的状态也需要留意。保存链接时，把出处和发布日期一起记下。', '研究机构博客适合了解作者想解决的问题，行业报道适合发现影响范围。把两种来源放在一起，可以继续追问一项技术在什么条件下成立，以及离实际使用还有哪些环节。'] },
+        { title: '为保存的内容写一句话', paragraphs: ['给收藏写一句“为什么值得回看”，例如“这里解释了这个接口的供电规则”。下次回到同一问题时，这句话会帮助你判断要打开哪篇文章。清单里长期用不到的来源，也可以暂时移出。'] }
+      ],
+      checklist: ['从少量来源开始，给每个来源确定用途。', '保存原文链接、发布日期和资料状态。', '给收藏写下值得回看的具体原因。'],
+      sourcesReviewedAt: '2026-10-05',
+      sources: [{ title: 'RSS Advisory Board：RSS 2.0 规范', url: 'https://www.rssboard.org/rss-specification' }, { title: 'Google Research：研究博客', url: 'https://research.google/blog/' }]
+    },
+    {
+      slug: 'read-a-hardware-review', category: '硬件', date: '2026-10-05',
+      title: '读一篇硬件评测，先看测试条件',
+      excerpt: '把环境、版本和任务对齐，再判断一项测试对自己的使用场景意味着什么。',
+      takeaway: '把一次测试的结论放在它的条件与范围内理解。',
+      sections: [
+        { title: '从自己每天的任务出发', paragraphs: ['挑设备前，先写下最常做的三件事。例如通勤听音乐、处理照片、出差办公。每项任务分别记下真正影响体验的因素，比较评测时就有了明确的参照。', '评测可以提供观察线索。一次续航测试说明设备在那套条件下坚持了多久；屏幕亮度、网络环境、应用与负载变化，都可能改变你实际获得的结果。'] },
+        { title: '给关键结论补上条件', paragraphs: ['看到跑分或帧率时，继续找具体型号、系统版本与性能设置。游戏测试还要看画质、分辨率和运行时长。两张来自不同条件的截图，需要先弄清差异才能用于比较。', '短时间能达到的峰值表现，与长时间使用后的表现回答不同的问题。重度任务如果持续很久，就寻找包含运行过程、温度或稳定性的记录。只给出一个结果的测试，可以继续作为待补充的线索。'] },
+        { title: '体验部分保留自己的判断', paragraphs: ['重量、握持、键盘手感和佩戴舒适度，会随使用者与场景变化。有条件时亲自试用，再把体验与可查证的规格分开记录。评测的用途是帮助缩小范围，最后仍要回到自己的任务与预算。'] }
+      ],
+      checklist: ['读清型号、版本、设置和环境。', '对照自己任务需要的持续使用条件。', '把主观体验与可查证的参数分开记录。'],
+      sourcesReviewedAt: '2026-10-05',
+      sources: []
+    },
+    {
+      slug: 'browser-cache-in-plain-language', category: '科技', date: '2026-10-05',
+      title: '改了网页，为什么还看到旧版本',
+      excerpt: '认识浏览器缓存与资源版本，沿着地址、响应和构建结果查找原因。',
+      takeaway: '先确认实际请求的地址，再查看缓存规则与发布版本。',
+      sections: [
+        { title: '缓存保存的是一次响应', paragraphs: ['浏览器可以保存已经请求过的页面或资源，后续访问时根据规则决定怎样使用。Cache-Control 响应头用于说明缓存行为，例如资源可以保存多久，以及使用前是否需要向服务器确认。', '其中 no-cache 表示使用前需要验证，no-store 表示缓存不应保存响应。两个名字容易混淆，设置时可以查 MDN 的定义和示例。'] },
+        { title: '从真正请求的文件查起', paragraphs: ['打开开发者工具的网络面板，检查当前页面请求的 CSS 和脚本地址。继续看响应头与返回内容，确认请求是否拿到了刚发布的文件。构建目录是否更新，也值得一并检查。', '为资源文件名加入内容版本，是一种常见的更新办法。内容变化后地址也变化，就能把新资源与旧资源区分开。页面本身的缓存规则需要配合设计，帮助访问者获得指向新资源的 HTML。'] },
+        { title: '沿着发布过程逐项确认', paragraphs: ['本地文件修改、构建完成与正式地址更新，是三个不同的状态。先确认构建结果，再检查发布记录，最后打开实际地址看返回内容。排查时记录具体 URL 和时间，会比反复刷新更容易找到问题。'] }
+      ],
+      checklist: ['检查当前请求的完整资源地址。', '查看响应头和返回的文件内容。', '确认构建结果与正式发布版本一致。'],
+      sourcesReviewedAt: '2026-10-05',
+      sources: [{ title: 'MDN：Cache-Control', url: 'https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Reference/Headers/Cache-Control' }]
+    },
     {
       slug: 'give-ai-a-boundary', category: 'AI', date: '2026-10-02',
       title: '给 AI 一个清楚的边界',

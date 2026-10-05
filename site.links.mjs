@@ -1,5 +1,17 @@
 // 常用网站导航，使用官方首页。
 export default [
+  { name: 'arXiv', url: 'https://arxiv.org/', category: '科技阅读', description: '查找研究论文与预印本，继续追溯报道中的原始资料。', monogram: 'aX', accent: '#df8494' },
+  { name: 'IEEE Spectrum', url: 'https://spectrum.ieee.org/', category: '科技阅读', description: '阅读工程、机器人与消费电子领域的报道和技术解释。', monogram: 'IE', accent: '#79b8fc' },
+  { name: 'Google Research', url: 'https://research.google/blog/', category: '科技阅读', description: '从研究者的介绍了解项目要解决的问题与研究方法。', monogram: 'G', accent: '#8dd5ac' },
+  { name: 'Nature News', url: 'https://www.nature.com/news', category: '科技阅读', description: '跟进科学研究与学术社区的新闻、分析和讨论。', monogram: 'n', accent: '#ee999b' },
+  { name: 'MIT Technology Review', url: 'https://www.technologyreview.com/', category: '科技阅读', description: '阅读技术变化、产业应用与社会影响的深度报道。', monogram: 'TR', accent: '#b5a0ff' },
+  { name: 'ScienceDaily', url: 'https://www.sciencedaily.com/', category: '科技阅读', description: '发现研究新闻，再沿着引用查找对应机构与原始资料。', monogram: 'SD', accent: '#95cddb' },
+  { name: 'iFixit', url: 'https://www.ifixit.com/', category: '硬件探索', description: '看看拆解与维修指南，了解设备结构和可维护性。', monogram: 'iF', accent: '#90bfff' },
+  { name: 'Raspberry Pi', url: 'https://www.raspberrypi.com/', category: '硬件探索', description: '探索单板计算机项目，查阅官方文档与上手资料。', monogram: 'RP', accent: '#e397b3' },
+  { name: 'Arduino', url: 'https://www.arduino.cc/', category: '硬件探索', description: '从开发板与示例开始，尝试传感器和电子制作。', monogram: 'A', accent: '#77cbc8' },
+  { name: 'Hackaday', url: 'https://hackaday.com/', category: '硬件探索', description: '浏览硬件改造与创客项目，看看别人怎样解决具体问题。', monogram: 'Ha', accent: '#ddcb93' },
+  { name: 'USB-IF', url: 'https://www.usb.org/', category: '硬件探索', description: '查阅 USB 接口、供电和认证的官方资料。', monogram: 'USB', accent: '#99aedb' },
+  { name: '华为消费者业务', url: 'https://consumer.huawei.com/cn/', category: '硬件探索', description: '查看华为设备的官方产品资料、支持与服务信息。', monogram: 'HW', accent: '#ee9c9f' },
   {
     "name": "ChatGPT",
     "url": "https://chatgpt.com/",

@@ -231,15 +231,23 @@ function startProgress() {
 function renderTrack() {
   const track = trackInfo();
   dock.dataset.track = track.id;
-  dock.style.setProperty('--sound-beat', `${60 / track.bpm}s`);
+  dock.style.setProperty('--sound-beat', '1.8s');
+  dock.style.setProperty('--music-accent', track.accent);
   dock.querySelector('.sound-title').textContent = track.title;
   dock.querySelector('.sound-dock-title').textContent = track.title;
   dock.querySelector('.sound-description').textContent = track.subtitle;
-  dock.querySelector('.sound-bpm').textContent = `${track.bpm} BPM`;
+  dock.querySelector('.sound-bpm').textContent = `${track.year} · VOCAL`;
   const source = dock.querySelector('.sound-source');
   source.href = track.source;
   source.textContent = track.artist;
-  dock.querySelector('.sound-jump').hidden = track.id !== 'neon';
+  const license = dock.querySelector('.sound-license');
+  license.href = track.licenseUrl; license.textContent = track.license;
+  const jump = dock.querySelector('.sound-jump');
+  jump.hidden = !track.highlight;
+  if (track.highlight) {
+    jump.replaceChildren(document.createTextNode(`${track.highlight.label} `));
+    const stamp = document.createElement('span'); stamp.className = 'mono'; stamp.textContent = `${formatTime(track.highlight.time)} ↗`; jump.append(stamp);
+  }
   trackButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.soundTrack === track.id)));
   seek.max = String(sound.duration);
   seeking = false; seekDirty = false;
@@ -253,6 +261,12 @@ function setSoundState(state) {
   const title = trackInfo().title;
   soundButton.setAttribute('aria-label', playing ? `暂停${title}` : state === 'loading' ? '取消音乐播放' : `播放${title}`);
   dock.querySelector('.sound-state').textContent = state === 'buffering' ? '缓冲中…' : playing ? (sound.volume === 0 ? '静音中' : '正在播放') : state === 'loading' ? '加载音乐…' : sound.currentTime > 0 ? '已暂停' : '点击播放';
+  document.querySelectorAll('[data-play-track]').forEach(button => {
+    const active = button.dataset.playTrack === sound.track && ['playing', 'buffering', 'loading'].includes(state);
+    button.setAttribute('aria-pressed', String(active));
+    button.setAttribute('aria-label', `${active ? '暂停' : '播放'}${SOUND_TRACKS.find(track => track.id === button.dataset.playTrack).title}`);
+    button.querySelector('.radio-action-label').textContent = active ? state === 'loading' ? '取消加载' : '暂停歌曲' : '播放歌曲';
+  });
   if (playing) startProgress();
   else { stopProgress(); updateProgress(); }
 }
@@ -300,9 +314,20 @@ document.querySelector('.sound-next')?.addEventListener('click', () => {
   const index = SOUND_TRACKS.findIndex(track => track.id === sound.track);
   changeTrack(SOUND_TRACKS[(index + 1) % SOUND_TRACKS.length].id);
 });
+document.querySelectorAll('[data-play-track]').forEach(button => button.addEventListener('click', () => {
+  if (sound.track === button.dataset.playTrack) toggleSound();
+  else changeTrack(button.dataset.playTrack, true);
+}));
+document.querySelector('.sound-repeat')?.addEventListener('click', event => {
+  sound.setRepeat(!sound.repeat);
+  event.currentTarget.setAttribute('aria-pressed', String(sound.repeat));
+  event.currentTarget.setAttribute('aria-label', sound.repeat ? '切换到顺序播放' : '切换到单曲循环');
+  event.currentTarget.textContent = sound.repeat ? '单曲循环' : '顺序播放';
+});
 document.querySelector('.sound-jump')?.addEventListener('click', () => {
+  if (!trackInfo().highlight) return;
   seeking = false; seekDirty = false;
-  sound.seek(120); updateProgress(undefined, true);
+  sound.seek(trackInfo().highlight.time); updateProgress(undefined, true);
   if (!['playing', 'buffering', 'loading'].includes(dock.dataset.state)) toggleSound();
 });
 function commitSeek() {
@@ -332,7 +357,10 @@ document.addEventListener('keydown', event => { if (event.key === 'Escape' && !s
 document.addEventListener('click', event => { if (!event.target.closest('.sound-dock')) closeSoundPanel(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopProgress(); else startProgress(); });
 sound.subscribe(state => {
-  if (state === 'error') {
+  if (state === 'ended') {
+    const index = SOUND_TRACKS.findIndex(track => track.id === sound.track);
+    changeTrack(SOUND_TRACKS[(index + 1) % SOUND_TRACKS.length].id, true);
+  } else if (state === 'error') {
     playbackRequest++; setSoundState('paused');
     soundStatus.textContent = '音频加载失败，请检查连接后重试。';
     openSoundPanel();

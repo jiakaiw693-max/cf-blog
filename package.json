@@ -8,7 +8,7 @@
     "build": "node scripts/build.mjs",
     "dev": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "check": "node scripts/build.mjs && node scripts/check.mjs"
+    "check": "node scripts/build.mjs && node scripts/check.mjs && node scripts/check-player.mjs"
   },
   "engines": { "node": ">=22" },
   "devDependencies": { "wrangler": "4.146.0" }
