@@ -26,6 +26,7 @@ themeToggle?.addEventListener('click', () => {
   if (!themeMenu) return;
   const open = themeMenu.hidden;
   closeNav();
+  window.dispatchEvent(new CustomEvent('bitdrift:panelopen'));
   themeMenu.hidden = !open;
   themeToggle.setAttribute('aria-expanded', String(open));
   if (open) themeChoices.find(button => button.getAttribute('aria-pressed') === 'true')?.focus();
@@ -50,15 +51,18 @@ function closeNav() {
 }
 toggle?.addEventListener('click', () => {
   closeTheme();
+  window.dispatchEvent(new CustomEvent('bitdrift:panelopen'));
   const opened = toggle.getAttribute('aria-expanded') !== 'true';
   toggle.setAttribute('aria-expanded',String(opened));
   toggle.setAttribute('aria-label',opened ? '关闭导航' : '打开导航');
   nav?.classList.toggle('is-open',opened);
 });
+document.addEventListener('click', event => { if (!event.target.closest('.main-nav, .menu-toggle')) closeNav(); });
+nav?.addEventListener('focusout', event => { if (!nav.contains(event.relatedTarget) && event.relatedTarget !== toggle) closeNav(); });
 nav?.querySelectorAll('a').forEach(link => link.addEventListener('click',closeNav));
 document.addEventListener('keydown',event => {
-  if (event.key === 'Escape' && themeMenu && !themeMenu.hidden) { closeTheme(true); return; }
-  if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { closeNav(); toggle.focus(); }
+  if (event.key === 'Escape' && themeMenu && !themeMenu.hidden) { event.preventDefault(); closeTheme(true); return; }
+  if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { event.preventDefault(); closeNav(); toggle.focus(); }
 });
 matchMedia('(min-width: 961px)').addEventListener('change',closeNav);
 document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click',async () => {
@@ -71,46 +75,7 @@ document.querySelectorAll('[data-copy]').forEach(button => button.addEventListen
   } catch { if (status) status.textContent = `请选中复制：${button.dataset.copy}`; }
 }));
 
-// 分类与搜索共同生效，初始 HTML 保留完整目录。
-const filters = [...document.querySelectorAll('[data-filter]')];
-const cards = [...document.querySelectorAll('.site-card')];
-const search = document.querySelector('#directory-search');
-const resultStatus = document.querySelector('#directory-status');
-const empty = document.querySelector('.directory-empty');
-let activeCategory = 'all';
-function updateDirectory() {
-  const query = (search?.value || '').trim().toLowerCase();
-  let count = 0;
-  cards.forEach(card => {
-    const visible = (activeCategory === 'all' || card.dataset.category === activeCategory) && card.dataset.search.includes(query);
-    card.hidden = !visible;
-    if (visible) count++;
-  });
-  if (resultStatus) resultStatus.textContent = `${count} 个网站`;
-  if (empty) empty.hidden = count > 0;
-  scheduleFrame();
-}
-filters.forEach(button => button.addEventListener('click',() => {
-  activeCategory = button.dataset.filter;
-  filters.forEach(item => { item.classList.toggle('is-active',item === button); item.setAttribute('aria-pressed',String(item === button)); });
-  updateDirectory();
-}));
-search?.addEventListener('input',updateDirectory);
-
-const noteFilters = [...document.querySelectorAll('[data-note-filter]')];
-const noteCards = [...document.querySelectorAll('[data-note-category]')];
-noteFilters.forEach(button => button.addEventListener('click', () => {
-  const category = button.dataset.noteFilter;
-  let count = 0;
-  noteFilters.forEach(filter => filter.setAttribute('aria-pressed', String(filter === button)));
-  noteCards.forEach(card => {
-    card.hidden = category !== 'all' && card.dataset.noteCategory !== category;
-    if (!card.hidden) count++;
-  });
-  const status = document.querySelector('.notes-count');
-  if (status) status.textContent = `${count} 篇手记`;
-  scheduleFrame();
-}));
+window.addEventListener('bitdrift:results', () => scheduleFrame());
 
 const revealElements = [...document.querySelectorAll('[data-reveal]')];
 let revealObserver;

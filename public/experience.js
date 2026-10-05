@@ -52,6 +52,7 @@ function renderResults() {
     option.tabIndex = -1;
     if (item.href) {
       option.href = item.href;
+      if (item.itemId) option.dataset.visitItem = item.itemId;
       if (item.external) { option.target = '_blank'; option.rel = 'noopener noreferrer'; }
     } else option.type = 'button';
     const symbol = document.createElement('span');
@@ -64,9 +65,7 @@ function renderResults() {
     option.addEventListener('pointerenter', () => selectResult(index));
     option.addEventListener('click', () => {
       dialog.close();
-      if (item.action === 'sound') toggleSound();
-      else if (item.action?.startsWith('track-')) changeTrack(item.action.slice(6), true);
-      else if (item.action) window.bitdriftTheme?.set(item.action);
+      if (item.action) window.bitdriftTheme?.set(item.action);
     });
     fragment.append(option);
   });
@@ -261,12 +260,6 @@ function setSoundState(state) {
   const title = trackInfo().title;
   soundButton.setAttribute('aria-label', playing ? `暂停${title}` : state === 'loading' ? '取消音乐播放' : `播放${title}`);
   dock.querySelector('.sound-state').textContent = state === 'buffering' ? '缓冲中…' : playing ? (sound.volume === 0 ? '静音中' : '正在播放') : state === 'loading' ? '加载音乐…' : sound.currentTime > 0 ? '已暂停' : '点击播放';
-  document.querySelectorAll('[data-play-track]').forEach(button => {
-    const active = button.dataset.playTrack === sound.track && ['playing', 'buffering', 'loading'].includes(state);
-    button.setAttribute('aria-pressed', String(active));
-    button.setAttribute('aria-label', `${active ? '暂停' : '播放'}${SOUND_TRACKS.find(track => track.id === button.dataset.playTrack).title}`);
-    button.querySelector('.radio-action-label').textContent = active ? state === 'loading' ? '取消加载' : '暂停歌曲' : '播放歌曲';
-  });
   if (playing) startProgress();
   else { stopProgress(); updateProgress(); }
 }
@@ -314,10 +307,6 @@ document.querySelector('.sound-next')?.addEventListener('click', () => {
   const index = SOUND_TRACKS.findIndex(track => track.id === sound.track);
   changeTrack(SOUND_TRACKS[(index + 1) % SOUND_TRACKS.length].id);
 });
-document.querySelectorAll('[data-play-track]').forEach(button => button.addEventListener('click', () => {
-  if (sound.track === button.dataset.playTrack) toggleSound();
-  else changeTrack(button.dataset.playTrack, true);
-}));
 document.querySelector('.sound-repeat')?.addEventListener('click', event => {
   sound.setRepeat(!sound.repeat);
   event.currentTarget.setAttribute('aria-pressed', String(sound.repeat));
@@ -353,8 +342,10 @@ function setVolume(value, persist = true) {
 }
 volume?.addEventListener('input', () => setVolume(Number(volume.value) / 100));
 mute?.addEventListener('click', () => setVolume(sound.volume > 0 ? 0 : rememberedVolume));
-document.addEventListener('keydown', event => { if (event.key === 'Escape' && !soundPanel.hidden) closeSoundPanel(true); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !event.defaultPrevented && !soundPanel.hidden) { event.preventDefault(); closeSoundPanel(true); } });
 document.addEventListener('click', event => { if (!event.target.closest('.sound-dock')) closeSoundPanel(); });
+dock?.addEventListener('focusout', event => { if (!dock.contains(event.relatedTarget)) closeSoundPanel(); });
+window.addEventListener('bitdrift:panelopen', () => closeSoundPanel());
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopProgress(); else startProgress(); });
 sound.subscribe(state => {
   if (state === 'ended') {
