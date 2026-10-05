@@ -100,13 +100,20 @@ function initializeReader() {
   html.dataset.readerSize = size;
 
   const continueContainer = document.querySelector('[data-continue-reading]');
+  let continueSignature = null;
   function renderContinue() {
     if (!continueContainer) return;
     const latest = store.latest();
     const note = latest && notes.get(latest.id);
+    const signature = note ? `${note.id}:${latest.ratio}` : 'empty';
+    if (signature === continueSignature) return;
+    continueSignature = signature;
     continueContainer.hidden = !note;
     continueContainer.replaceChildren();
-    if (!note) return;
+    if (!note) {
+      window.dispatchEvent(new CustomEvent('bitdrift:readingchange', { detail: { visible: false } }));
+      return;
+    }
     const label = document.createElement('span');
     label.className = 'mono continue-label';
     label.textContent = '上次读到这里';
@@ -127,6 +134,7 @@ function initializeReader() {
     arrow.textContent = '继续阅读 →';
     arrow.setAttribute('aria-label', `继续阅读：${note.name}`);
     continueContainer.append(copy, arrow);
+    window.dispatchEvent(new CustomEvent('bitdrift:readingchange', { detail: { visible: true, id: note.id, ratio: latest.ratio } }));
   }
   renderContinue();
   window.addEventListener('pageshow', () => { store.reload(); renderContinue(); });
@@ -142,6 +150,9 @@ function initializeReader() {
   html.classList.add('reader-ready');
 
   const toolbar = page.querySelector('.reader-toolbar');
+  const settingsToggle = toolbar?.querySelector('.reader-settings-toggle');
+  const settings = toolbar?.querySelector('.reader-settings');
+  const settingsClose = settings?.querySelector('.reader-settings-close');
   const focusButton = toolbar?.querySelector('[data-reader-focus]');
   const sizeButtons = [...(toolbar?.querySelectorAll('[data-reader-size]') || [])];
   const progress = page.querySelector('.reader-progress');
@@ -190,7 +201,11 @@ function initializeReader() {
     if (!readerIntent || !dirty) return;
     const now = Date.now();
     if (!force && ratio < .995 && (now - lastWrite < 1500 || Math.abs(ratio - lastRatio) < .02)) return;
-    if (store.save(id, ratio)) { lastWrite = now; lastRatio = ratio; }
+    if (store.save(id, ratio)) {
+      lastWrite = now;
+      lastRatio = ratio;
+      window.dispatchEvent(new CustomEvent('bitdrift:readingchange', { detail: { id, ratio } }));
+    }
     dirty = false;
   }
   function update() {
@@ -240,7 +255,7 @@ function initializeReader() {
   });
   window.addEventListener('scroll', () => { dirty = readerIntent; schedule(); }, { passive: true });
   window.addEventListener('resize', schedule, { passive: true });
-  window.addEventListener('pagehide', flush);
+  window.addEventListener('pagehide', () => { closeSettings(); flush(); });
   window.addEventListener('pageshow', schedule);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); else schedule(); });
   window.addEventListener('hashchange', () => {
@@ -264,36 +279,75 @@ function initializeReader() {
     window.scrollTo({ top: ratio > 0 ? readingScrollTarget(geometry(), ratio) : previousScroll, behavior: 'instant' });
     schedule();
   }
+  function closeSettings(returnFocus = false) {
+    if (!settings || !settingsToggle) return;
+    settings.hidden = true;
+    settingsToggle.setAttribute('aria-expanded', 'false');
+    if (returnFocus) settingsToggle.focus({ preventScroll: true });
+  }
+  function setFocus(focus) {
+    preservePosition(() => {
+      closeSettings();
+      document.body.classList.toggle('reading-focus', focus);
+      focusButton?.setAttribute('aria-pressed', String(focus));
+      if (focusButton) focusButton.textContent = focus ? '退出专注' : '专注阅读';
+      if (settingsToggle) {
+        settingsToggle.textContent = focus ? '退出专注' : '阅读设置';
+        settingsToggle.setAttribute('aria-label', focus ? '退出专注阅读' : '阅读设置');
+      }
+    });
+    settingsToggle?.focus({ preventScroll: true });
+  }
+  settingsToggle?.addEventListener('click', () => {
+    if (document.body.classList.contains('reading-focus')) { setFocus(false); return; }
+    if (!settings) return;
+    if (!settings.hidden) { closeSettings(true); return; }
+    window.dispatchEvent(new CustomEvent('bitdrift:panelopen', { detail: { source: 'reader' } }));
+    settings.hidden = false;
+    settingsToggle.setAttribute('aria-expanded', 'true');
+    (sizeButtons.find(button => button.getAttribute('aria-pressed') === 'true') || focusButton || settingsClose)?.focus({ preventScroll: true });
+  });
+  settingsClose?.addEventListener('click', () => closeSettings(true));
+  settings?.addEventListener('focusout', event => {
+    if (!settings.contains(event.relatedTarget) && event.relatedTarget !== settingsToggle) closeSettings();
+  });
+  document.addEventListener('pointerdown', event => {
+    if (settings && !settings.hidden && !settings.contains(event.target) && !settingsToggle?.contains(event.target)) closeSettings();
+  }, { passive: true });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && settings && !settings.hidden) {
+      event.preventDefault();
+      closeSettings(true);
+    }
+  });
+  window.addEventListener('bitdrift:panelopen', event => {
+    if (event.detail?.source !== 'reader') closeSettings();
+  });
   syncSize();
   sizeButtons.forEach(button => button.addEventListener('click', () => {
     if (!['normal', 'large'].includes(button.dataset.readerSize) || button.dataset.readerSize === size) return;
     preservePosition(() => { size = button.dataset.readerSize; syncSize(); });
     try { storage?.setItem(PREFERENCE_KEY, JSON.stringify({ size })); } catch { /* Keep the selected text size for this page. */ }
   }));
-  focusButton?.addEventListener('click', () => {
-    preservePosition(() => {
-      const focus = document.body.classList.toggle('reading-focus');
-      focusButton.setAttribute('aria-pressed', String(focus));
-      focusButton.textContent = focus ? '退出专注' : '专注阅读';
-    });
-  });
+  focusButton?.addEventListener('click', () => setFocus(!document.body.classList.contains('reading-focus')));
   resumeBanner?.querySelector('[data-reader-resume]')?.addEventListener('click', () => {
     resumeBanner.hidden = true;
     markIntent();
     dirty = true;
     window.scrollTo({ top: readingScrollTarget(geometry(), resumeRatio), behavior: 'instant' });
-    focusButton?.focus({ preventScroll: true });
+    (settingsToggle || focusButton)?.focus({ preventScroll: true });
     schedule();
   });
   resumeBanner?.querySelector('[data-reader-reset]')?.addEventListener('click', () => {
     resumeBanner.hidden = true;
     store.reset(id);
+    window.dispatchEvent(new CustomEvent('bitdrift:readingchange', { detail: { id, ratio: 0 } }));
     resumeRatio = 0;
     lastRatio = 0;
     readerIntent = false;
     dirty = false;
     window.scrollTo({ top: 0, behavior: 'instant' });
-    focusButton?.focus({ preventScroll: true });
+    (settingsToggle || focusButton)?.focus({ preventScroll: true });
     schedule();
   });
   if (isSectionHash()) { readerIntent = true; dirty = true; }

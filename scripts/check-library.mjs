@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createLibraryStore, LIBRARY_KEY, matchesSearch, normalizeLibraryState, RECENT_LIMIT, searchTerms } from '../public/library-store.js';
+import { createLibraryStore, discoveryLocation, LIBRARY_KEY, matchesSearch, normalizeLibraryState, readDiscoveryQuery, RECENT_LIMIT, searchTerms } from '../public/library-store.js';
 
 const known = new Set(['note:ai', 'note:usb-c', 'site:https://example.com/']);
 let checks = 0;
@@ -140,6 +140,38 @@ test('搜索统一大小写、全角字符，并组合所有词', () => {
   assert.equal(matchesSearch('AI 工具与实践', terms), true);
   assert.equal(matchesSearch('AI 硬件', terms), false);
   assert.equal(matchesSearch('任意内容', searchTerms('   ')), true);
+});
+test('手记筛选链接恢复分类、搜索和已知排序', () => {
+  const state = readDiscoveryQuery('?category=AI&q=%E5%B7%A5%E5%85%B7&sort=oldest&saved=1', { kind: 'note', categories: ['all', 'AI', '硬件'] });
+  assert.deepEqual(state, { category: 'AI', q: '工具', sort: 'oldest', savedOnly: false });
+});
+test('网站筛选链接只接受已知分类和 saved=1', () => {
+  const state = readDiscoveryQuery('?category=unknown&sort=title&saved=true&q=GitHub', { kind: 'site', categories: ['all', '开发工具'] });
+  assert.deepEqual(state, { category: 'all', q: 'GitHub', sort: 'default', savedOnly: false });
+  assert.equal(readDiscoveryQuery('?saved=1', { kind: 'site', categories: ['all'] }).savedOnly, true);
+});
+test('损坏排序值回退，长搜索词限制为 100 个字符', () => {
+  const state = readDiscoveryQuery(`?sort=invalid&q=${'a'.repeat(500)}`, { kind: 'note', categories: ['all'] });
+  assert.equal(state.sort, 'default');
+  assert.equal(state.q.length, 100);
+});
+test('更新筛选地址保留页面路径、片段和其他参数', () => {
+  const href = discoveryLocation('https://example.com/directory/?source=share&sort=title#directory', { category: '开发工具', q: ' MDN ', savedOnly: true }, 'site');
+  const url = new URL(href, 'https://example.com');
+  assert.equal(url.pathname, '/directory/');
+  assert.equal(url.hash, '#directory');
+  assert.equal(url.searchParams.get('source'), 'share');
+  assert.equal(url.searchParams.get('category'), '开发工具');
+  assert.equal(url.searchParams.get('q'), 'MDN');
+  assert.equal(url.searchParams.get('saved'), '1');
+  assert.equal(url.searchParams.has('sort'), false);
+});
+test('默认筛选地址省略默认值并完整往返恢复', () => {
+  const href = discoveryLocation('https://example.com/notes/?category=AI&q=tools&sort=title&saved=1#notes', { category: 'all', q: '', sort: 'default', savedOnly: false }, 'note');
+  assert.equal(href, '/notes/#notes');
+  const selected = { category: '硬件', q: 'USB C', sort: 'newest', savedOnly: false };
+  const queryHref = discoveryLocation('https://example.com/notes/', selected, 'note');
+  assert.deepEqual(readDiscoveryQuery(new URL(queryHref, 'https://example.com').search, { kind: 'note', categories: ['all', '硬件'] }), selected);
 });
 
 console.log(`收藏与最近打开记录检查通过：${checks} 项。`);

@@ -1,0 +1,176 @@
+.reader-toolbar {
+  top: 84px;
+  padding: 10px 14px 9px;
+  margin-bottom: 30px;
+  border-color: var(--line);
+  border-radius: 10px;
+  background: var(--menu);
+  box-shadow: 0 5px 20px var(--shadow-soft);
+}
+
+.reader-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+.reader-actions .save-button,
+.reader-settings-toggle {
+  min-height: 44px;
+  padding: 8px 13px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.reader-settings-toggle {
+  flex-shrink: 0;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: transparent;
+}
+
+.reader-settings-toggle:hover,
+.reader-settings-toggle[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.reader-progress-row {
+  gap: 10px;
+  margin-top: 7px;
+}
+
+.reader-progress {
+  height: 2px;
+}
+
+.reader-progress > span {
+  background: var(--accent);
+}
+
+.reader-percent {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.reader-settings {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 276px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 190px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--menu);
+  box-shadow: 0 12px 32px var(--shadow);
+  color: var(--ink);
+}
+
+.reader-settings[hidden] {
+  display: none;
+}
+
+.reader-settings h2,
+.reader-settings h3,
+.reader-settings-title {
+  margin: 0 38px 19px 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.reader-settings-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.reader-settings .reader-size {
+  display: flex;
+  gap: 8px;
+  margin-left: 0;
+}
+
+.reader-settings .reader-size button {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 14px;
+}
+
+.reader-settings .reader-focus {
+  width: 100%;
+  margin-top: 16px;
+  min-height: 44px;
+  font-size: 12px;
+}
+
+.reader-settings-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.reader-settings-close:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.reading-focus .reader-toolbar {
+  top: 12px;
+}
+
+.reading-focus .reader-settings-toggle {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.reading-focus .article-page {
+  max-width: 780px;
+}
+
+@media (max-width: 680px) {
+  .reader-toolbar {
+    top: 76px;
+    padding: 8px 11px;
+    margin-bottom: 24px;
+  }
+
+  .reader-actions {
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .reader-actions .save-button,
+  .reader-settings-toggle {
+    padding-inline: 11px;
+  }
+
+  .reader-settings {
+    padding: 19px;
+  }
+
+  .reading-focus .reader-toolbar {
+    top: 10px;
+  }
+}

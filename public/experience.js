@@ -77,6 +77,7 @@ function renderResults() {
 function openCommand(trigger) {
   if (dialog.open) { dialog.close(); return; }
   returnFocus = trigger || document.activeElement;
+  window.dispatchEvent(new CustomEvent('bitdrift:panelopen', { detail: { source: 'command' } }));
   closeTransientPanels();
   commandInput.value = '';
   renderResults();
@@ -269,6 +270,7 @@ function closeSoundPanel(returnFocus = false) {
   if (returnFocus) soundExpand.focus();
 }
 function openSoundPanel() {
+  window.dispatchEvent(new CustomEvent('bitdrift:panelopen', { detail: { source: 'sound' } }));
   closeTransientPanels(true);
   soundPanel.hidden = false; soundExpand.setAttribute('aria-expanded', 'true'); soundExpand.setAttribute('aria-label', '收起音乐控制');
   renderWaveform(); updateProgress();
@@ -345,7 +347,7 @@ mute?.addEventListener('click', () => setVolume(sound.volume > 0 ? 0 : remembere
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && !event.defaultPrevented && !soundPanel.hidden) { event.preventDefault(); closeSoundPanel(true); } });
 document.addEventListener('click', event => { if (!event.target.closest('.sound-dock')) closeSoundPanel(); });
 dock?.addEventListener('focusout', event => { if (!dock.contains(event.relatedTarget)) closeSoundPanel(); });
-window.addEventListener('bitdrift:panelopen', () => closeSoundPanel());
+window.addEventListener('bitdrift:panelopen', event => { if (event.detail?.source !== 'sound') closeSoundPanel(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopProgress(); else startProgress(); });
 sound.subscribe(state => {
   if (state === 'ended') {

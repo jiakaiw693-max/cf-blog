@@ -30,7 +30,9 @@ for (const file of files.filter(f => extname(f) === '.html')) {
     const href = match[1];
     if (/^(https?:|mailto:|data:)/.test(href)) continue;
     links++;
-    const [path, anchor] = href.split('#');
+    const parsed = new URL(href.replaceAll('&amp;', '&'), 'https://bitdrift.invalid/');
+    const path = href.startsWith('#') ? '' : decodeURIComponent(parsed.pathname);
+    const anchor = decodeURIComponent(parsed.hash.slice(1));
     const target = path ? join(out, path.replace(/^\//, '')) : file;
     const finalPath = path.endsWith('/') ? join(target, 'index.html') : target;
     try {

@@ -181,3 +181,28 @@ document.addEventListener('visibilitychange',() => {
   if (!document.hidden) scheduleFrame();
 });
 updateMotion();
+
+// Keep old shared homepage links usable after splitting the index pages.
+function migrateHomeFragment() {
+  if (!document.body.classList.contains('home-page')) return;
+  const fragment = location.hash.slice(1);
+  const paths = { notes: '/notes/', directory: '/directory/', library: '/library/', about: '/about/', contact: '/about/#contact', explore: '/notes/#explore', focus: '/about/#focus' };
+  const target = paths[fragment] || (fragment.startsWith('route-') ? `/notes/#${fragment}` : fragment.startsWith('focus-') ? `/about/#${fragment}` : '');
+  if (target) location.replace(target);
+}
+function openFragmentDetails() {
+  let id;
+  try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
+  const target = id && document.getElementById(id);
+  if (!target) return;
+  let parent = target.parentElement;
+  let opened = false;
+  while (parent) {
+    if (parent instanceof HTMLDetailsElement && !parent.open) { parent.open = true; opened = true; }
+    parent = parent.parentElement;
+  }
+  if (opened) requestAnimationFrame(() => target.scrollIntoView({ block: 'start', behavior: 'instant' }));
+}
+migrateHomeFragment();
+openFragmentDetails();
+window.addEventListener('hashchange', () => { migrateHomeFragment(); openFragmentDetails(); });

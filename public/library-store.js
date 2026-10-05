@@ -37,6 +37,31 @@ export function matchesSearch(text, terms) {
   return terms.every(term => value.includes(term));
 }
 
+const discoverySorts = new Set(['default', 'newest', 'oldest', 'title']);
+export function readDiscoveryQuery(search, { kind, categories }) {
+  const params = new URLSearchParams(search);
+  const category = params.get('category') || 'all';
+  const sort = params.get('sort') || 'default';
+  return {
+    category: categories.includes(category) ? category : 'all',
+    q: (params.get('q') || '').slice(0, 100),
+    sort: kind === 'note' && discoverySorts.has(sort) ? sort : 'default',
+    savedOnly: kind === 'site' && params.get('saved') === '1'
+  };
+}
+
+export function discoveryLocation(href, state, kind) {
+  const url = new URL(href);
+  const params = url.searchParams;
+  for (const key of ['category', 'q', 'sort', 'saved']) params.delete(key);
+  if (state.category && state.category !== 'all') params.set('category', state.category);
+  const q = String(state.q || '').trim().slice(0, 100);
+  if (q) params.set('q', q);
+  if (kind === 'note' && discoverySorts.has(state.sort) && state.sort !== 'default') params.set('sort', state.sort);
+  if (kind === 'site' && state.savedOnly) params.set('saved', '1');
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export function createLibraryStore({ knownIds, storage = null, eventTarget = null, now = () => Date.now(), key = LIBRARY_KEY }) {
   const known = new Set([...knownIds].filter(id => typeof id === 'string' && id.length > 0));
   const subscribers = new Set();
