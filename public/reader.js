@@ -77,6 +77,13 @@ function safeStorage() {
   try { return window.localStorage; } catch { return null; }
 }
 
+export function readReaderSize(storage, current = 'normal') {
+  if (!storage) return current;
+  try {
+    return JSON.parse(storage.getItem(PREFERENCE_KEY) || '{}')?.size === 'large' ? 'large' : 'normal';
+  } catch { return current; }
+}
+
 function catalogueFromPage() {
   try {
     const data = JSON.parse(document.querySelector('#library-data')?.textContent || '[]');
@@ -93,10 +100,8 @@ function initializeReader() {
   const storage = safeStorage();
   const store = createReadingStore(storage, new Set(notes.keys()));
   const html = document.documentElement;
-  let size = 'normal';
-  try {
-    if (JSON.parse(storage?.getItem(PREFERENCE_KEY) || '{}')?.size === 'large') size = 'large';
-  } catch { /* Use normal text when the preference cannot be read. */ }
+  let size = readReaderSize(storage);
+  let sizePreferencePersistent = Boolean(storage);
   html.dataset.readerSize = size;
 
   const continueContainer = document.querySelector('[data-continue-reading]');
@@ -153,6 +158,7 @@ function initializeReader() {
   const settingsToggle = toolbar?.querySelector('.reader-settings-toggle');
   const settings = toolbar?.querySelector('.reader-settings');
   const settingsClose = settings?.querySelector('.reader-settings-close');
+  const settingsResetButtons = [...(settings?.querySelectorAll('[data-reader-reset]') || [])];
   const focusButton = toolbar?.querySelector('[data-reader-focus]');
   const sizeButtons = [...(toolbar?.querySelectorAll('[data-reader-size]') || [])];
   const progress = page.querySelector('.reader-progress');
@@ -204,6 +210,7 @@ function initializeReader() {
     if (store.save(id, ratio)) {
       lastWrite = now;
       lastRatio = ratio;
+      syncResetButtons();
       window.dispatchEvent(new CustomEvent('bitdrift:readingchange', { detail: { id, ratio } }));
     }
     dirty = false;
@@ -256,7 +263,12 @@ function initializeReader() {
   window.addEventListener('scroll', () => { dirty = readerIntent; schedule(); }, { passive: true });
   window.addEventListener('resize', schedule, { passive: true });
   window.addEventListener('pagehide', () => { closeSettings(); flush(); });
-  window.addEventListener('pageshow', schedule);
+  window.addEventListener('pageshow', () => { refreshSize(); syncResetButtons(); schedule(); });
+  window.addEventListener('storage', event => {
+    if (event.storageArea && event.storageArea !== storage) return;
+    if (event.key === PREFERENCE_KEY || event.key === null) refreshSize();
+    if (event.key === READING_KEY || event.key === null) syncResetButtons();
+  });
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); else schedule(); });
   window.addEventListener('hashchange', () => {
     if (isSectionHash()) { markIntent(); dirty = true; if (resumeBanner) resumeBanner.hidden = true; }
@@ -271,6 +283,15 @@ function initializeReader() {
   function syncSize() {
     html.dataset.readerSize = size;
     sizeButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.readerSize === size)));
+  }
+  function refreshSize() {
+    if (!sizePreferencePersistent) return;
+    const next = readReaderSize(storage, size);
+    if (next !== size) preservePosition(() => { size = next; syncSize(); });
+  }
+  function syncResetButtons() {
+    const hasRecord = (store.get(id)?.ratio || 0) > 0;
+    settingsResetButtons.forEach(button => { button.hidden = !hasRecord; });
   }
   function preservePosition(change) {
     const ratio = readingRatio(geometry());
@@ -299,6 +320,7 @@ function initializeReader() {
     settingsToggle?.focus({ preventScroll: true });
   }
   settingsToggle?.addEventListener('click', () => {
+    settingsToggle.focus({ preventScroll: true });
     if (document.body.classList.contains('reading-focus')) { setFocus(false); return; }
     if (!settings) return;
     if (!settings.hidden) { closeSettings(true); return; }
@@ -324,10 +346,12 @@ function initializeReader() {
     if (event.detail?.source !== 'reader') closeSettings();
   });
   syncSize();
+  syncResetButtons();
   sizeButtons.forEach(button => button.addEventListener('click', () => {
     if (!['normal', 'large'].includes(button.dataset.readerSize) || button.dataset.readerSize === size) return;
     preservePosition(() => { size = button.dataset.readerSize; syncSize(); });
-    try { storage?.setItem(PREFERENCE_KEY, JSON.stringify({ size })); } catch { /* Keep the selected text size for this page. */ }
+    try { storage?.setItem(PREFERENCE_KEY, JSON.stringify({ size })); }
+    catch { sizePreferencePersistent = false; }
   }));
   focusButton?.addEventListener('click', () => setFocus(!document.body.classList.contains('reading-focus')));
   resumeBanner?.querySelector('[data-reader-resume]')?.addEventListener('click', () => {
@@ -338,18 +362,21 @@ function initializeReader() {
     (settingsToggle || focusButton)?.focus({ preventScroll: true });
     schedule();
   });
-  resumeBanner?.querySelector('[data-reader-reset]')?.addEventListener('click', () => {
-    resumeBanner.hidden = true;
+  page.querySelectorAll('[data-reader-reset]').forEach(button => button.addEventListener('click', () => {
+    if (resumeBanner) resumeBanner.hidden = true;
     store.reset(id);
+    syncResetButtons();
+    closeSettings();
     window.dispatchEvent(new CustomEvent('bitdrift:readingchange', { detail: { id, ratio: 0 } }));
     resumeRatio = 0;
     lastRatio = 0;
+    lastWrite = 0;
     readerIntent = false;
     dirty = false;
     window.scrollTo({ top: 0, behavior: 'instant' });
     (settingsToggle || focusButton)?.focus({ preventScroll: true });
     schedule();
-  });
+  }));
   if (isSectionHash()) { readerIntent = true; dirty = true; }
   update();
 }

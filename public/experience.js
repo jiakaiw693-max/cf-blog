@@ -77,6 +77,7 @@ function renderResults() {
 function openCommand(trigger) {
   if (dialog.open) { dialog.close(); return; }
   returnFocus = trigger || document.activeElement;
+  document.querySelector('.command-open')?.focus({ preventScroll: true });
   window.dispatchEvent(new CustomEvent('bitdrift:panelopen', { detail: { source: 'command' } }));
   closeTransientPanels();
   commandInput.value = '';
@@ -87,7 +88,8 @@ function openCommand(trigger) {
 document.querySelectorAll('[data-open-command]').forEach(button => button.addEventListener('click', () => openCommand(button)));
 document.querySelector('.command-close')?.addEventListener('click', () => dialog.close());
 dialog?.addEventListener('close', () => {
-  if (returnFocus?.isConnected && typeof returnFocus.focus === 'function') returnFocus.focus({ preventScroll: true });
+  const target = returnFocus?.isConnected && returnFocus.getClientRects?.().length ? returnFocus : document.querySelector('.command-open');
+  target?.focus({ preventScroll: true });
 });
 dialog?.addEventListener('click', event => {
   if (event.target !== dialog) return;
@@ -267,9 +269,10 @@ function setSoundState(state) {
 function closeSoundPanel(returnFocus = false) {
   if (!soundPanel || !soundExpand) return;
   soundPanel.hidden = true; soundExpand.setAttribute('aria-expanded', 'false'); soundExpand.setAttribute('aria-label', '展开音乐控制');
-  if (returnFocus) soundExpand.focus();
+  if (returnFocus) soundExpand.focus({ preventScroll: true });
 }
 function openSoundPanel() {
+  soundExpand?.focus({ preventScroll: true });
   window.dispatchEvent(new CustomEvent('bitdrift:panelopen', { detail: { source: 'sound' } }));
   closeTransientPanels(true);
   soundPanel.hidden = false; soundExpand.setAttribute('aria-expanded', 'true'); soundExpand.setAttribute('aria-label', '收起音乐控制');
@@ -360,7 +363,7 @@ sound.subscribe(state => {
   } else setSoundState(state);
 });
 window.addEventListener('pagehide', event => {
-  playbackRequest++; seeking = false; sound.pause(); setSoundState('paused');
+  playbackRequest++; seeking = false; sound.pause(); setSoundState('paused'); closeSoundPanel();
   if (!event.persisted) sound.dispose().catch(() => {});
 });
 setVolume(sound.volume, false); renderTrack(); setSoundState('paused');

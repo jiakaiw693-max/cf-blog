@@ -65,6 +65,7 @@ function syncSaveButtons() {
     const saved = store.isSaved(item.id);
     button.setAttribute('aria-pressed', String(saved));
     button.setAttribute('aria-label', `${saved ? '取消收藏' : '收藏'}${item.name}`);
+    button.title = button.getAttribute('aria-label');
     const label = button.querySelector('[data-save-label]');
     if (label) label.textContent = saved ? '已收藏' : '收藏';
     const icon = button.querySelector('[data-save-icon]');
@@ -238,7 +239,13 @@ function renderLibrary() {
   if (clearRecent) clearRecent.hidden = state.recent.length === 0 || activeView !== 'recent';
   if (libraryEmpty) {
     libraryEmpty.hidden = compactLibrary || visible.length > 0;
-    libraryEmpty.textContent = activeView === 'recent' ? '打开一篇手记或一个网站后，会在这里留下入口。' : activeView === 'sites' ? '还没有收藏网站。在网站卡片上点“收藏”，下次可以直接打开。' : activeView === 'notes' ? '还没有收藏手记。把想继续读的文章留在这里。' : '点击手记或网站旁的“收藏”，把常用入口留在这里。';
+    const message = libraryEmpty.querySelector('p');
+    if (message) message.textContent = activeView === 'recent' ? '打开一篇手记或一个网站后，会在这里留下入口。' : activeView === 'sites' ? '还没有收藏网站。在网站卡片上点“收藏”，下次可以直接打开。' : activeView === 'notes' ? '还没有收藏手记。把想继续读的文章留在这里。' : '点击手记或网站旁的“收藏”，把常用入口留在这里。';
+    const link = libraryEmpty.querySelector('a');
+    if (link) {
+      link.href = activeView === 'notes' ? '/notes/' : '/directory/';
+      link.textContent = activeView === 'notes' ? '阅读手记 →' : '看看网站 →';
+    }
   }
   if (libraryStatus) {
     const summary = compactLibrary ? visible.length ? '最近收藏的入口' : '' : activeView === 'recent' ? `${visible.length} 条最近打开记录` : `${visible.length} 项收藏`;

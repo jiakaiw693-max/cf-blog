@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createReadingStore, readingRatio, readingScrollTarget, sanitizeReadingRecords } from '../public/reader.js';
+import { createReadingStore, readReaderSize, readingRatio, readingScrollTarget, sanitizeReadingRecords } from '../public/reader.js';
 
 const now = 1791190000000;
 const ids = new Set(['note:alpha', 'note:beta', 'note:gamma']);
@@ -8,6 +8,19 @@ const values = new Map();
 const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
 let checks = 0;
 function check(name, action) { action(); checks++; }
+
+check('Reader size reloads saved preferences and clearing returns to normal', () => {
+  assert.equal(readReaderSize({ getItem: () => '{"size":"large"}' }), 'large');
+  assert.equal(readReaderSize({ getItem: () => null }, 'large'), 'normal');
+  assert.equal(readReaderSize({ getItem: () => '{"size":"unknown"}' }, 'large'), 'normal');
+});
+check('Unavailable preference storage preserves the current reader size', () => {
+  assert.equal(readReaderSize(null, 'large'), 'large');
+  assert.equal(readReaderSize({ getItem() { throw new Error('denied'); } }, 'large'), 'large');
+});
+check('Unreadable size preference retains the current choice', () => {
+  assert.equal(readReaderSize({ getItem: () => '{bad' }, 'large'), 'large');
+});
 
 check('Malformed and unlisted records are discarded', () => {
   const records = sanitizeReadingRecords({

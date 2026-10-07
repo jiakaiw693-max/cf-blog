@@ -419,3 +419,87 @@ html{scroll-padding-top:92px}
 @media(max-width:680px){html{scroll-padding-top:84px}.header-inner{gap:12px}.brand{font-size:16px}.brand small{font-size:7px}.brand-symbol{width:32px;height:32px;font-size:25px}.compact-home .hero{grid-template-columns:1fr;gap:28px;padding-block:34px 30px}.compact-home .hero-kicker{font-size:8px}.compact-home .intro-line{margin-top:19px;font-size:13px}.compact-home .hero h1{font-size:46px;margin-top:11px}.compact-home .hero-description{font-size:14px;margin-top:16px}.compact-home .hero-actions{margin-top:22px}.compact-art.orbit-terminal{height:224px;border-radius:13px}.compact-art.orbit-terminal .art-media{inset:-40px -20px 0}.compact-art figcaption.mono{bottom:16px;left:18px;font-size:8px}.compact-heading{margin-bottom:17px}.compact-heading h2{font-size:20px}.home-section{padding-block:24px 30px}.compact-home .notes-list{grid-template-columns:1fr;gap:12px}.compact-home .note-row,.compact-page .note-row,.compact-home .note-row:hover,.compact-page .note-row:hover{padding:19px;min-height:0;gap:11px}.compact-home .note-card-top .note-meta{flex-direction:row;align-items:center;gap:9px}.compact-home .note-main h3,.compact-page .note-main h3{font-size:20px}.compact-home .note-main>p,.compact-page .note-main>p{margin-top:8px}.compact-home .directory-grid,.compact-page .directory-grid{grid-template-columns:1fr;gap:12px}.compact-home .site-card-link,.compact-page .site-card-link{padding:17px 18px 4px}.home-library .library-grid{grid-template-columns:1fr}.home-library .library-item{padding:11px 15px}.compact-home .featured-section{padding-bottom:34px}.listing-main{padding-block:31px 45px}.page-heading{margin-bottom:25px}.page-heading h1{font-size:33px}.page-heading>p:last-child{font-size:13px}.compact-page .directory-toolbar{gap:18px}.compact-page .notes-discovery{gap:12px}.compact-route{grid-template-columns:1fr;gap:13px;padding-block:20px}.route-details{padding-inline:18px;margin-top:26px}.compact-route-links>a,.compact-route-links>div a{min-height:38px;display:inline-flex;align-items:center}.compact-about>p{font-size:15px}.compact-about>p.about-introduction{font-size:17px}.about-focus>div{grid-template-columns:1fr;gap:6px}.compact-email{font-size:20px}.compact-footer .footer-inner{flex-direction:column;align-items:flex-start;gap:8px}.footer-contact{gap:15px}.compact-article .article-page h1{font-size:30px}.compact-article .article-page{padding-top:28px}}
 .save-button[aria-pressed="true"] .save-symbol[data-save-icon]{font-size:21px}.save-button .save-symbol[data-save-icon]::after{content:none}
 .home-library .library-item-meta{display:block}.home-library .library-item-meta>span{display:none}.home-library .library-item .save-button{min-height:40px;padding:5px 9px;font-size:10px}.home-library .library-item [data-save-label]{display:none}
+
+/* Quiet surfaces and consistent targets across the compact pages. */
+.compact-page::before,
+.compact-article::before{opacity:.2}
+.compact-page>.pointer-glow,
+.compact-article>.pointer-glow{display:none}
+.compact-home .note-main>p,
+.compact-page .note-main>p{font-size:14px;line-height:1.85}
+.note-card-top .save-button{width:44px;min-height:44px;border-radius:8px}
+.note-card-top .save-button:hover{background:var(--accent-soft);color:var(--accent)}
+.note-read{min-height:44px}
+.note-read:hover>span{transform:translateX(2px);background:var(--accent-soft);color:var(--accent)}
+.compact-home .hero-actions .button:hover .button-mark{transform:translate(2px,-2px)}
+.compact-home .site-card,
+.compact-page .site-card{position:relative;display:block;min-height:130px}
+.site-card[hidden],
+.note-row[hidden]{display:none!important}
+.compact-home .site-card-link,
+.compact-page .site-card-link{
+  display:grid;
+  grid-template-columns:36px minmax(0,1fr);
+  gap:12px;
+  height:100%;
+  padding:23px 70px 24px 21px;
+}
+.site-card p{font-size:13px;line-height:1.8}
+.site-card .site-open{
+  position:absolute;
+  right:25px;
+  bottom:21px;
+  font-size:18px;
+}
+.site-card:hover .site-open{transform:translate(2px,-2px)}
+.site-card .save-button{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:44px;
+  min-height:44px;
+  margin:0;
+  padding:0;
+  border-color:transparent;
+  border-radius:8px;
+  color:var(--muted);
+  background:transparent;
+}
+.site-card .save-button [data-save-label]{display:none}
+.site-card .save-button [data-save-icon]{font-size:21px}
+.site-card .save-button:hover,
+.site-card .save-button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.compact-home .site-category{display:none}
+.compact-home .hero-actions .text-link{min-height:44px;display:inline-flex;align-items:center}
+.compact-footer .footer-inner{padding-block:0}
+.footer-contact a,
+.footer-contact button{min-height:44px}
+.compact-route-links>a,
+.compact-route-links>div a{min-height:44px;align-items:center}
+.compact-route-links>div a{display:inline-flex}
+.motion-paused .note-row:hover,
+.motion-paused .site-card:hover .site-open,
+.motion-paused .note-read:hover>span,
+.motion-paused .hero-actions .button:hover .button-mark{transform:none}
+@media(max-width:680px){
+  .compact-home .site-card,
+  .compact-page .site-card{min-height:116px}
+  .compact-home .site-card-link,
+  .compact-page .site-card-link{padding:20px 68px 21px 18px}
+  .site-card h3{font-size:17px}
+  .site-card p{font-size:14px}
+  .compact-home .note-main>p,
+  .compact-page .note-main>p{font-size:14px}
+}
+@media(hover:none){
+  .compact-home .note-row:hover,
+  .compact-page .note-row:hover,
+  .compact-home .site-card:hover,
+  .compact-page .site-card:hover{transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .note-row:hover,
+  .site-card:hover .site-open,
+  .note-read:hover>span,
+  .hero-actions .button:hover .button-mark{transform:none!important}
+}

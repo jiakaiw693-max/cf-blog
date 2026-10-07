@@ -12,7 +12,7 @@ function closeTheme(returnFocus = false) {
   if (!themeMenu || !themeToggle) return;
   themeMenu.hidden = true;
   themeToggle.setAttribute('aria-expanded', 'false');
-  if (returnFocus) themeToggle.focus();
+  if (returnFocus) themeToggle.focus({ preventScroll: true });
 }
 function syncTheme(announce = false) {
   const preference = window.bitdriftTheme?.preference || 'system';
@@ -24,12 +24,14 @@ function syncTheme(announce = false) {
 }
 themeToggle?.addEventListener('click', () => {
   if (!themeMenu) return;
+  // Safari does not focus clicked buttons; move focus before hiding another panel.
+  themeToggle.focus({ preventScroll: true });
   const open = themeMenu.hidden;
   closeNav();
-  window.dispatchEvent(new CustomEvent('bitdrift:panelopen'));
+  if (open) window.dispatchEvent(new CustomEvent('bitdrift:panelopen', { detail: { source: 'theme' } }));
   themeMenu.hidden = !open;
   themeToggle.setAttribute('aria-expanded', String(open));
-  if (open) themeChoices.find(button => button.getAttribute('aria-pressed') === 'true')?.focus();
+  if (open) themeChoices.find(button => button.getAttribute('aria-pressed') === 'true')?.focus({ preventScroll: true });
 });
 themeChoices.forEach(button => button.addEventListener('click', () => {
   window.bitdriftTheme?.set(button.dataset.themeChoice);
@@ -50,19 +52,25 @@ function closeNav() {
   nav.classList.remove('is-open');
 }
 toggle?.addEventListener('click', () => {
+  toggle.focus({ preventScroll: true });
   closeTheme();
-  window.dispatchEvent(new CustomEvent('bitdrift:panelopen'));
   const opened = toggle.getAttribute('aria-expanded') !== 'true';
+  if (opened) window.dispatchEvent(new CustomEvent('bitdrift:panelopen', { detail: { source: 'nav' } }));
   toggle.setAttribute('aria-expanded',String(opened));
   toggle.setAttribute('aria-label',opened ? '关闭导航' : '打开导航');
   nav?.classList.toggle('is-open',opened);
 });
 document.addEventListener('click', event => { if (!event.target.closest('.main-nav, .menu-toggle')) closeNav(); });
 nav?.addEventListener('focusout', event => { if (!nav.contains(event.relatedTarget) && event.relatedTarget !== toggle) closeNav(); });
+toggle?.addEventListener('focusout', event => { if (!nav?.contains(event.relatedTarget)) closeNav(); });
 nav?.querySelectorAll('a').forEach(link => link.addEventListener('click',closeNav));
 document.addEventListener('keydown',event => {
   if (event.key === 'Escape' && themeMenu && !themeMenu.hidden) { event.preventDefault(); closeTheme(true); return; }
-  if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { event.preventDefault(); closeNav(); toggle.focus(); }
+  if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { event.preventDefault(); closeNav(); toggle.focus({ preventScroll: true }); }
+});
+window.addEventListener('bitdrift:panelopen', event => {
+  if (event.detail?.source !== 'theme') closeTheme();
+  if (event.detail?.source !== 'nav') closeNav();
 });
 matchMedia('(min-width: 961px)').addEventListener('change',closeNav);
 document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click',async () => {
@@ -116,6 +124,7 @@ let magneticRect = null;
 let artRect = null;
 let artHovered = false;
 const visualMotion = () => !paused && !motionPreference.matches && finePointer.matches;
+const acceptsPointer = event => visualMotion() && event.pointerType === 'mouse';
 function renderFrame() {
   frame = 0;
   if (document.hidden) return;
@@ -143,20 +152,21 @@ function refreshRects() {
 }
 addEventListener('scroll',refreshRects,{passive:true});
 addEventListener('resize',refreshRects,{passive:true});
-addEventListener('pointermove',event => { if (!visualMotion()) return; pointerX = event.clientX; pointerY = event.clientY; scheduleFrame(); },{passive:true});
+addEventListener('pointermove',event => { if (!acceptsPointer(event)) return; pointerX = event.clientX; pointerY = event.clientY; scheduleFrame(); },{passive:true});
 document.querySelectorAll('.hover-surface').forEach(card => {
-  card.addEventListener('pointerenter',() => { if (visualMotion()) { hoverCard = card; cardRect = card.getBoundingClientRect(); } });
+  card.addEventListener('pointerenter',event => { if (acceptsPointer(event)) { hoverCard = card; cardRect = card.getBoundingClientRect(); } });
   card.addEventListener('pointerleave',() => { if (hoverCard === card) { hoverCard = null; cardRect = null; } });
 });
 document.querySelectorAll('[data-magnetic]').forEach(button => {
-  button.addEventListener('pointerenter',() => { if (visualMotion()) { magnetic = button; magneticRect = button.getBoundingClientRect(); } });
+  button.addEventListener('pointerenter',event => { if (acceptsPointer(event)) { magnetic = button; magneticRect = button.getBoundingClientRect(); } });
   button.addEventListener('pointerleave',() => { button.style.removeProperty('--magnetic-x'); button.style.removeProperty('--magnetic-y'); if (magnetic === button) { magnetic = null; magneticRect = null; } });
 });
-art?.addEventListener('pointerenter',() => { if (visualMotion()) { artHovered = true; artRect = art.getBoundingClientRect(); } });
+art?.addEventListener('pointerenter',event => { if (acceptsPointer(event)) { artHovered = true; artRect = art.getBoundingClientRect(); } });
 art?.addEventListener('pointerleave',() => { artHovered = false; art?.style.removeProperty('--tilt-x'); art?.style.removeProperty('--tilt-y'); });
 function resetTransforms() {
   art?.style.removeProperty('--tilt-x'); art?.style.removeProperty('--tilt-y'); art?.style.removeProperty('--parallax-y');
   document.querySelectorAll('[data-magnetic]').forEach(button => { button.style.removeProperty('--magnetic-x'); button.style.removeProperty('--magnetic-y'); });
+  hoverCard = null; cardRect = null; magnetic = null; magneticRect = null; artRect = null; artHovered = false;
 }
 function updateMotion() {
   const disabled = paused || motionPreference.matches;
@@ -174,12 +184,20 @@ function updateMotion() {
 }
 motionButton?.addEventListener('click',() => { paused = !paused; updateMotion(); });
 motionPreference.addEventListener('change',() => { paused = motionPreference.matches; updateMotion(); });
-finePointer.addEventListener('change',() => { if (!finePointer.matches) resetTransforms(); });
-document.addEventListener('visibilitychange',() => {
+finePointer.addEventListener('change',() => { resetTransforms(); scheduleFrame(); });
+function syncVisibility() {
   html.classList.toggle('page-hidden',document.hidden);
   if (document.hidden && frame) { cancelAnimationFrame(frame); frame = 0; }
+  if (document.hidden) resetTransforms();
   if (!document.hidden) scheduleFrame();
+}
+document.addEventListener('visibilitychange',syncVisibility);
+window.addEventListener('pageshow',syncVisibility);
+window.addEventListener('pagehide',() => {
+  if (frame) { cancelAnimationFrame(frame); frame = 0; }
+  resetTransforms(); closeTheme(); closeNav();
 });
+window.addEventListener('blur',resetTransforms);
 updateMotion();
 
 // Keep old shared homepage links usable after splitting the index pages.
