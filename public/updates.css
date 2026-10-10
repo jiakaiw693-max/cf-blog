@@ -48,13 +48,15 @@
 .updates-refresh[hidden], .updates-placeholder[hidden] { display: none; }
 .updates-refresh:hover { color: var(--accent); border-color: var(--line-strong); background: var(--accent-soft); }
 .updates-refresh:disabled { opacity: .55; cursor: wait; }
-.updates-embed { position: relative; min-height: 640px; background: var(--menu); }
+.updates-embed { position: relative; min-height: 250px; background: var(--menu); }
+.updates-feed[data-has-timeline] .updates-embed { min-height: 640px; }
 .updates-stage { width: 100%; min-height: 640px; }
-.updates-stage[data-pending] { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+.updates-stage[data-pending] { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .updates-stage iframe { display: block; width: 100%; max-width: 100%; margin-inline: auto; border: 0; }
-.updates-placeholder { min-height: 640px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 17px; padding: 28px; text-align: center; }
-.updates-placeholder-mark { font-size: 46px; color: var(--muted); }
-.updates-placeholder p { color: var(--muted); font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
+.updates-placeholder { min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 30px 22px; text-align: center; }
+.updates-placeholder-mark { font-size: 32px; color: var(--muted); }
+.updates-placeholder h2 { color: var(--ink); font-size: 16px; line-height: 1.6; font-weight: 500; overflow-wrap: anywhere; }
+.updates-placeholder p { max-width: 34em; color: var(--muted); font-size: 13px; line-height: 1.9; overflow-wrap: anywhere; }
 .updates-placeholder a { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--accent); }
 .updates-bottom { border-top: 1px solid var(--line); padding-block: 12px; }
 .updates-status { color: var(--muted); font-size: 11px; line-height: 1.8; }

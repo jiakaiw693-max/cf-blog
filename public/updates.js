@@ -2,6 +2,8 @@
 const feed = document.querySelector('[data-x-feed]');
 const host = feed?.querySelector('[data-x-host]');
 const placeholder = feed?.querySelector('[data-x-placeholder]');
+const message = feed?.querySelector('[data-x-message]');
+const explanation = feed?.querySelector('[data-x-explanation]');
 const status = feed?.querySelector('[data-x-status]');
 const refresh = feed?.querySelector('[data-x-refresh]');
 const username = feed?.dataset.xUsername;
@@ -13,6 +15,7 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
   let currentStage;
   let pendingStage;
   let currentTheme;
+  let pendingTheme;
   let busy = false;
   let active = true;
   let hovered = false;
@@ -30,7 +33,7 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
       script.src = 'https://platform.twitter.com/widgets.js';
       script.async = true;
       let finished = false;
-      const timeout = setTimeout(() => finish(new Error('X component timed out')), 18000);
+      const timeout = setTimeout(() => finish(new Error('X component timed out')), 10000);
       function finish(error) {
         if (finished) return;
         finished = true;
@@ -63,7 +66,7 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
   }
   function scheduleReload(delay = Math.max(1000, interval - (Date.now() - lastAttempt))) {
     clearTimeout(reloadTimer);
-    if (!active || document.hidden) return;
+    if (!active || document.hidden || !currentStage) return;
     reloadTimer = setTimeout(() => {
       if (canReload()) render();
       else scheduleReload(60000);
@@ -76,6 +79,7 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
     pendingStage?.remove();
     const request = ++generation;
     const requestedTheme = theme();
+    pendingTheme = requestedTheme;
     const stage = document.createElement('div');
     stage.className = 'updates-stage';
     stage.dataset.pending = '';
@@ -91,10 +95,14 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
     host.setAttribute('aria-busy', 'true');
     feed.dataset.state = 'loading';
     status.textContent = currentStage ? '正在重新载入时间线…' : '正在加载 X 时间线…';
+    if (!currentStage) {
+      if (message) message.textContent = '正在连接 X 时间线';
+      if (explanation) explanation.textContent = '若 X 暂时无法提供内容，下方仍可直接打开原站。';
+    }
     let deadline;
     const cancelled = new Promise((_, reject) => {
       cancelRender = () => reject(new Error('X render superseded'));
-      deadline = setTimeout(() => reject(new Error('X timeline timed out')), 30000);
+      deadline = setTimeout(() => reject(new Error('X timeline timed out')), 15000);
     });
     try {
       const result = await Promise.race([
@@ -112,6 +120,7 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
       currentStage?.remove();
       currentStage = stage;
       currentTheme = requestedTheme;
+      feed.dataset.hasTimeline = 'true';
       delete stage.dataset.pending;
       stage.removeAttribute('aria-hidden');
       stage.inert = false;
@@ -125,12 +134,17 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
       feed.dataset.state = currentStage ? 'ready' : 'error';
       status.textContent = currentStage
         ? '刷新暂时不可用，仍显示上次载入的时间线。'
-        : '时间线暂时未能加载，可重试或打开 X 查看。';
+        : 'X 组件未能返回时间线，可稍后重试。';
+      if (!currentStage) {
+        if (message) message.textContent = 'X 时间线暂时不可用';
+        if (explanation) explanation.textContent = 'X 的访问限制或网络问题会影响加载，本站当前未获取到推文内容。';
+      }
     } finally {
       clearTimeout(deadline);
       if (request === generation && active) {
         cancelRender = null;
         pendingStage = null;
+        pendingTheme = null;
         busy = false;
         refresh.disabled = false;
         refresh.querySelector('span').textContent = '刷新动态';
@@ -145,7 +159,7 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
   feed.addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') hovered = true; });
   feed.addEventListener('pointerleave', () => { hovered = false; });
   window.addEventListener('bitdrift:themechange', () => {
-    if (currentTheme !== theme() || busy) render();
+    if ((pendingTheme || currentTheme) !== theme()) render();
   });
   document.addEventListener('visibilitychange', () => {
     clearTimeout(reloadTimer);
@@ -161,6 +175,7 @@ if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(userna
     cancelRender = null;
     pendingStage?.remove();
     pendingStage = null;
+    pendingTheme = null;
     busy = false;
     hovered = false;
     refresh.disabled = false;
