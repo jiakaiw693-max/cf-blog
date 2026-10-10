@@ -9,6 +9,8 @@ export default {
   url: '',
   github: 'https://github.com/jiakaiw693-max',
   email: '766043204@qq.com',
+  // 免费动态页使用 X 官方嵌入，只需填写公开账号名（不含 @）。
+  updates: { username: 'thsottiaux' },
   websites,
   socialAccount: '比特漂流',
   introduction: '我是十点准时睡，也是「比特漂流」的内容创作者。关注 AI、科技与硬件，喜欢把复杂的事情讲清楚，也把自己的观察留在这里。',

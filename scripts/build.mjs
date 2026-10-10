@@ -26,6 +26,7 @@ for (const route of site.explorations || []) {
 }
 if (!/^https:\/\//.test(site.github)) throw new Error('GitHub URL must use HTTPS');
 if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(site.email)) throw new Error('Invalid email address');
+if (!/^[a-z0-9_]{1,15}$/i.test(site.updates?.username || '')) throw new Error('Invalid X updates username');
 for (const link of site.websites) {
   const url = new URL(link.url);
   if (url.protocol !== 'https:' || url.username || url.password) throw new Error(`Invalid website URL: ${link.name}`);
@@ -49,7 +50,7 @@ function head(title, description, path = '/') {
   <meta name="theme-color" content="#f3f6fc"><meta name="color-scheme" content="light dark"><meta name="description" content="${esc(description)}">
   <meta property="og:type" content="${path?.startsWith('/notes/') && path !== '/notes/' ? 'article' : 'website'}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:locale" content="zh_CN">
   ${base && path ? `<link rel="canonical" href="${esc(base + path)}"><meta property="og:url" content="${esc(base + path)}">` : ''}
-  <title>${esc(title)}</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><script src="/theme.js"></script><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/future.css">${path?.startsWith('/notes/') && path !== '/notes/' ? '<link rel="stylesheet" href="/reader.css">' : ''}<script src="/app.js" defer></script><script src="/experience.js" type="module"></script><script src="/library.js" type="module"></script><script src="/reader.js" type="module"></script>`;
+  <title>${esc(title)}</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><script src="/theme.js"></script><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/future.css">${path === '/' || path === '/updates/' ? '<link rel="stylesheet" href="/updates.css">' : ''}${path === '/updates/' ? '<meta name="twitter:dnt" content="on"><script src="/updates.js" type="module"></script>' : ''}${path?.startsWith('/notes/') && path !== '/notes/' ? '<link rel="stylesheet" href="/reader.css">' : ''}<script src="/app.js" defer></script><script src="/experience.js" type="module"></script><script src="/library.js" type="module"></script><script src="/reader.js" type="module"></script>`;
 }
 
 const themeIcons = {
@@ -69,7 +70,7 @@ const libraryItems = [
 ];
 const saveButton = (id,name) => `<button class="save-button" type="button" data-save-item="${esc(id)}" aria-label="收藏${esc(name)}" aria-pressed="false"><span class="save-symbol" data-save-icon aria-hidden="true">☆</span><span data-save-label>收藏</span></button>`;
 const commandItems = [
-  ...[['首页','/','个人网站首页'],['网站','/directory/',`探索 ${site.websites.length} 个网站入口`],['手记','/notes/',`阅读 ${site.notes.length} 篇手记`],['收藏','/library/','收藏与最近打开'],['关于','/about/','个人介绍与联系方式'],['联系我','/about/#contact',site.email]].map(([name,href,description])=>({name,description,category:'页面',href})),
+  ...[['首页','/','个人网站首页'],['网站','/directory/',`探索 ${site.websites.length} 个网站入口`],['手记','/notes/',`阅读 ${site.notes.length} 篇手记`],['动态','/updates/',`关注 @${site.updates.username} 的 X 公开更新`],['收藏','/library/','收藏与最近打开'],['关于','/about/','个人介绍与联系方式'],['联系我','/about/#contact',site.email]].map(([name,href,description])=>({name,description,category:'页面',href})),
   ...(site.explorations || []).map(route => ({name:route.title,description:route.description,category:'探索路线',href:`/notes/#route-${route.id}`})),
   ...site.notes.map(note=>({name:note.title,description:note.excerpt,category:'手记',href:`/notes/${note.slug}/`,itemId:`note:${note.slug}`})),
   ...site.websites.map(link=>({name:link.name,description:link.description,category:link.category,href:link.url,external:true,itemId:`site:${link.url}`})),
@@ -98,7 +99,7 @@ function experienceMarkup() {
 function header(current = '') {
   return `<a class="skip-link" href="#main">跳到正文</a><div class="scroll-progress" aria-hidden="true"></div><div class="pointer-glow" aria-hidden="true"></div><header class="site-header"><div class="container header-inner">
     <a class="brand" href="/" aria-label="${esc(site.brand)}首页"><span class="brand-symbol" aria-hidden="true">b.</span><span>${esc(site.brand)}<small>IDEAS IN ORBIT</small></span></a>
-    <nav class="main-nav" aria-label="主导航" id="main-nav">${[['home','/','首页'],['notes','/notes/','手记'],['directory','/directory/','网站'],['library','/library/','收藏'],['about','/about/','关于']].map(([key,href,label])=>`<a href="${href}"${current === key ? ' aria-current="page" class="is-current"' : ''}>${label}</a>`).join('')}</nav>
+    <nav class="main-nav" aria-label="主导航" id="main-nav">${[['home','/','首页'],['notes','/notes/','手记'],['directory','/directory/','网站'],['updates','/updates/','动态'],['library','/library/','收藏'],['about','/about/','关于']].map(([key,href,label])=>`<a href="${href}"${current === key ? ' aria-current="page" class="is-current"' : ''}>${label}</a>`).join('')}</nav>
     <div class="header-controls"><button class="command-open icon-button" type="button" aria-label="打开快捷搜索" title="快捷搜索（Ctrl / ⌘ K）" data-open-command><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>${themeControl()}<button class="menu-toggle icon-button" type="button" aria-controls="main-nav" aria-expanded="false" aria-label="打开导航"><span></span><span></span></button></div>
   </div></header>${experienceMarkup()}`;
 }
@@ -128,7 +129,7 @@ for (const [index, note] of site.notes.entries()) {
 await writeFile(resolve(out, '404.html'), `<!doctype html><html lang="zh-CN" id="top"><head>${head(`页面未找到 · ${site.brand}`, '这个地址暂时没有内容。', null)}<meta name="robots" content="noindex"></head><body>${header()}<main id="main" class="container error-page"><p class="eyebrow mono">404 / OUT OF ORBIT</p><h1>这条轨道，<br>还没有留下记录。</h1><p>这个地址暂时没有内容。回到首页，继续看看。</p><a class="button button-accent" href="/">回到首页</a></main>${footer()}</body></html>`);
 await writeFile(resolve(out, 'robots.txt'), `User-agent: *\nAllow: /\n${base ? `Sitemap: ${base}/sitemap.xml\n` : ''}`);
 if (base) {
-  const paths = ['/', '/notes/', '/directory/', '/library/', '/about/', ...site.notes.map(n => `/notes/${n.slug}/`)];
+  const paths = ['/', '/notes/', '/directory/', '/updates/', '/library/', '/about/', ...site.notes.map(n => `/notes/${n.slug}/`)];
   await writeFile(resolve(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(p => `<url><loc>${esc(base + p)}</loc></url>`).join('')}</urlset>`);
 }
-console.log(`Built homepage, 4 index pages, ${site.notes.length} notes, ${site.websites.length} website links and 404 page → dist/`);
+console.log(`Built homepage, ${Object.keys(pageKit.pages).length} index pages, ${site.notes.length} notes, ${site.websites.length} website links and 404 page → dist/`);
