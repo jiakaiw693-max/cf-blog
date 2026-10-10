@@ -18,15 +18,19 @@
 
 个人介绍与文章为本次网站制作撰写的内容，新的六篇科技说明稿于 2026-10-05 加入。可在 `site.config.mjs` 里直接修改或删除。页面日期表示文章在本站的发布时间。
 
-## 免费 X 动态
+## 免费 Codex 重置动态
 
-`/updates/` 展示 [@thsottiaux](https://x.com/thsottiaux) 的 X 官方公开时间线。首页保留一个轻量入口，导航与快捷搜索也可进入。仅打开动态页时加载官方组件，深浅主题跟随网站设置，提供刷新按钮与直接打开 X 的入口。
+`/updates/` 以原生卡片展示 [@thsottiaux](https://x.com/thsottiaux) 的额度相关记录与公开消息摘要，使用用户已允许的免费第三方来源 [Codex Reset Observatory](https://codex.gussuriworks.com/)。每条卡片提供 X 原帖链接，区分消息发布时间与社区记录时间；来源注明适用套餐时同时显示范围。中文摘要是社区整理内容，不是原帖逐字引用。首页、导航和快捷搜索保留入口，卡片自动跟随网站的深浅主题。
 
-打开页面会自动加载；成功载入后每五分钟尝试重新载入。页面隐藏、正在操作时间线或向下阅读时会延后自动刷新。刷新失败时保留原来的时间线；首次加载失败时显示紧凑提示和原站入口，由用户点击重试，不连续自动请求。内容等待最多 15 秒，官方脚本加载最多 10 秒。页底时间表示本次组件载入时间。
+构建时将 `data/updates.json` 中实际取得的公开记录写入 HTML，第一次打开和未启用 JavaScript 时也有内容。动态页打开后向本站 `/api/updates` 检查来源，随后每十分钟检查一次；页面隐藏、指针停在内容上、键盘焦点位于记录内或向下阅读时延后检查。手动「检查更新」仍遵守服务端十分钟缓存。记录没变化时不重建卡片。
 
-此方案沿用 Cloudflare Workers Static Assets 免费部署，无需 X API 密钥、数据库、定时 Worker 或付费抓取服务。使用 X 官方嵌入，内容、显示顺序、可用性与更新速度由 X 决定；不保存推文副本，不筛选关键词，也不保证秒级更新。部分网络环境或 X 的访问限制可能影响显示，届时可使用页面上的 X 链接。
+Cloudflare 使用同一公开来源地址和账号缓存结果，缓存的新鲜度为十分钟，保留一天以便来源失败时回退。上游请求最多等待八秒，浏览器请求最多等待十二秒。浏览器也保存最近取得的记录；存储被阻止时仍可阅读和刷新。接口不可用时保留较新的本机记录或部署快照，明确提示未确认更新，不用空列表覆盖已有内容。页面分别显示来源检查时间、本站取得时间与每条记录的时间，均按北京时间显示；来源检查超过两小时或来源报告异常时显示过期提示。
 
-关注账号在 `site.config.mjs` 的 `updates.username` 修改，填写公开用户名，不含 `@`。官方嵌入说明见 [X Help：嵌入时间线](https://help.x.com/en/using-x/embed-x-feed)。
+运行方式是访问动态页时检查并更新，未访问页面时没有后台定时采集。内容依赖社区来源的收录和更新时间，并不覆盖账号全部推文，不保证秒级更新。本站不展示重置概率预测，也不能判断访问者个人额度是否已重置；实际信息以原帖与自己的账户为准。
+
+此方案无需 X API 密钥、数据库、额外依赖、付费服务或定时 Worker，可在 Cloudflare 免费配额内运行。第三方来源也可能延迟、限流或停止提供服务。来源公共 API 的用途、字段与至少十分钟的建议轮询间隔见 [来源项目的 Public API 文档](https://github.com/gussuri/codex-reset-observatory#public-api)。
+
+`site.config.mjs` 的 `updates.username` 目前为 `thsottiaux`。当前来源专门整理 Tibo 的动态，改为其他账号时还需要更换 `public/updates-data.js` 的来源适配器与部署快照；仅改用户名不能抓取任意 X 账号。
 
 ## 配置到 Cloudflare Workers
 
@@ -44,13 +48,13 @@
 
 保存并部署后，Cloudflare 会给出实际的 `workers.dev` 地址。后续推送 `main` 可自动构建部署。Worker 名称应与 `wrangler.jsonc` 里的 `name` 一致；已有 Worker 使用其他名字时，将配置文件里的 `name` 改成实际名字。
 
-这是 Workers Static Assets 项目。静态资源目录已在 `wrangler.jsonc` 中设置为 `./dist`，无需填写 Worker 脚本入口、配置数据库或添加 API 密钥。
+这是 Workers Static Assets 项目。`wrangler.jsonc` 已设置脚本入口 `./worker/index.mjs`、静态资源目录 `./dist` 和 `ASSETS` 绑定；仅 `/api/updates` 及其尾斜杠地址优先进入 Worker，其余页面保留静态资源路由。部署命令会读取这些设置，无需在控制台另填脚本入口、配置数据库或添加 API 密钥。
 
 第一次部署不要求预先知道域名。获得稳定的正式地址后，在 `site.config.mjs` 的 `url` 填完整 HTTPS 根地址并重新部署，网站会生成 canonical 链接、Open Graph 地址与 `sitemap.xml`。也支持 Cloudflare 构建环境变量 `SITE_URL`；配置文件中的 `url` 优先。地址必须是网站根地址，例如 `https://example.com`。
 
 ### 仓库此前已连接 Cloudflare Pages
 
-新的提交会按已有 Cloudflare 项目的设置触发构建。若继续使用 **Pages**，构建命令为 `npm run build`，输出目录为 `dist`，根目录使用仓库根，Pages 自动上传资源，无需执行 `wrangler deploy`。Pages 可使用自动注入的 `CF_PAGES_URL` 生成地址；正式域名建议通过 `SITE_URL` 或 `site.config.mjs` 设置。
+新的提交会按已有 Cloudflare 项目的设置触发构建。若继续使用 **Pages**，构建命令为 `npm run build`，输出目录为 `dist`，根目录使用仓库根，Pages 自动上传资源，无需执行 `wrangler deploy`。仓库根目录的 `functions/api/updates.js` 提供同一个动态接口，由 Pages Git 集成自动部署，不需要手动添加绑定。Pages 可使用自动注入的 `CF_PAGES_URL` 生成地址；正式域名建议通过 `SITE_URL` 或 `site.config.mjs` 设置。
 
 要使用 **Workers**，请按上面的步骤创建或连接 Worker。GitHub 提交本身不会把已有 Pages 项目转换成 Worker。
 
@@ -69,8 +73,14 @@
 | `public/library-store.js` | 已知内容校验、本机存储与存储失效回退 |
 | `public/reader.js` | 阅读进度、继续阅读、大字号、专注模式与目录位置 |
 | `public/reader.css` | 阅读设置浮层、进度条与专注阅读布局 |
-| `public/updates.js` | X 官方时间线、刷新、主题跟随与加载失败提示 |
+| `public/updates.js` | 原生记录展示、自动检查、手动刷新、本机缓存与失败回退 |
+| `public/updates-data.js` | 公共来源适配、账号和原帖校验、时间处理与共享轮询间隔 |
+| `public/updates-render.js` | 构建器与浏览器共用的内容卡片、安全文本输出 |
 | `public/updates.css` | 首页动态入口与动态页的响应式样式 |
+| `data/updates.json` | 已取得的真实公开记录与来源时间，供首次页面与离线回退使用 |
+| `worker/index.mjs` | Workers 动态接口与静态资源入口 |
+| `worker/updates.mjs` | 服务端公开来源请求、数据校验、Cloudflare 缓存与回退 |
+| `functions/api/updates.js` | 已使用 Pages 的仓库所需的动态接口 |
 | `public/sound.js` | 曲目元数据与原生音频播放、循环、切歌、定位和媒体状态 |
 | `public/audio/` | 三首完整人声 MP3 与预先计算的音频波形 |
 | `THIRD_PARTY_NOTICES.md` | 音乐来源、CC BY 4.0 署名和文件校验值 |
@@ -79,7 +89,7 @@
 | `scripts/build.mjs` | 生成全部页面、快捷搜索数据与可选 sitemap |
 | `scripts/home.mjs` | 精简首页与内容预览 |
 | `scripts/pages.mjs` | 手记、网站、动态、收藏、关于页面与共用卡片 |
-| `wrangler.jsonc` | Cloudflare Workers 名称和静态资源配置 |
+| `wrangler.jsonc` | Cloudflare Workers 入口、名称、静态资源绑定与接口路由 |
 
 新增手记时，在 `notes` 数组里添加一项，提供唯一的英文 `slug`、分类、日期、标题与摘要。正文可用 `paragraphs`，或用 `sections` 提供小标题和段落；`takeaway` 是要点，`checklist` 是实践清单，`sources` 是资料标题与 HTTPS 地址，`sourcesReviewedAt` 是实际核对日期。每篇手记自动生成 `/notes/slug/` 页面。主题路线在 `explorations` 中配置，`note` 指向文章 slug，`sites` 使用网站导航中已存在的名称。构建器会检查路线指向，并将网站、文章和路线加入快捷搜索。当前采用手动发布，配置中的所有手记都会进入网站；准备好内容后再添加到该数组。
 
@@ -106,6 +116,7 @@ npx wrangler deploy --dry-run
 - [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
 - [Workers 与 Git 仓库集成](https://developers.cloudflare.com/workers/ci-cd/builds/)
 - [Workers 构建设置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+- [静态资源绑定与 Worker 路由](https://developers.cloudflare.com/workers/static-assets/binding/)
 - [静态路由与 404 页面](https://developers.cloudflare.com/workers/static-assets/routing/static-site-generation/)
 
 ## 收藏与阅读

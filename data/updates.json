@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "username": "thsottiaux",
+  "provider": "codex-reset-observatory",
+  "fetchedAt": "2026-10-10T14:22:54.206Z",
+  "sourceCheckedAt": "2026-10-10T14:20:56.352Z",
+  "sourceUpdatedAt": "2026-10-10T00:26:44.000Z",
+  "sourceStale": false,
+  "items": [
+    {
+      "id": "record:2107913674593644711:2026-10-07T23:12:28.952Z",
+      "kind": "record",
+      "title": "活跃用户达4000万纪念 BANKED 重置权发放",
+      "summary": "已观测到 BANKED 重置发放。",
+      "url": "https://x.com/thsottiaux/status/2107913674593644711",
+      "postedAt": "2026-10-07T19:19:17.000Z",
+      "eventAt": "2026-10-07T23:12:28.952Z",
+      "scope": "所有付费套餐",
+      "approximate": true
+    },
+    {
+      "id": "record:2106845241357824205:2026-10-07T03:35:09.000Z",
+      "kind": "record",
+      "title": "社区投票重置",
+      "summary": "根据社区投票结果，已完成Codex使用额度重置。",
+      "url": "https://x.com/thsottiaux/status/2106845241357824205",
+      "postedAt": "2026-10-04T20:33:43.000Z",
+      "eventAt": "2026-10-07T03:35:09.000Z",
+      "scope": "",
+      "approximate": false
+    },
+    {
+      "id": "activity:2106845241357824205:2026-10-04T20:33:43.000Z",
+      "kind": "activity",
+      "title": "最近收录的公开消息",
+      "summary": "在接下来的28天里，我们每天要么推出一项对大多数 Codex / Work 用户有明确提升的内容，要么执行一次完全重置。让改进开始吧。",
+      "url": "https://x.com/thsottiaux/status/2106845241357824205",
+      "postedAt": "2026-10-04T20:33:43.000Z",
+      "eventAt": null,
+      "scope": "",
+      "approximate": false
+    },
+    {
+      "id": "record:2105843926221660585:2026-10-02T21:18:48.000Z",
+      "kind": "record",
+      "title": "GPT-6.1 Sol 初期负载过高致歉重置",
+      "summary": "使用限制重置已完成。",
+      "url": "https://x.com/thsottiaux/status/2105843926221660585",
+      "postedAt": "2026-10-02T02:14:51.000Z",
+      "eventAt": "2026-10-02T21:18:48.000Z",
+      "scope": "",
+      "approximate": false
+    },
+    {
+      "id": "record:2104838506363408740:2026-09-29T18:41:59.778Z",
+      "kind": "record",
+      "title": "GPT-6.1 发布纪念 BANKED 重置权发放",
+      "summary": "已观测到 BANKED 重置发放。",
+      "url": "https://x.com/thsottiaux/status/2104838506363408740",
+      "postedAt": "2026-09-29T07:39:40.000Z",
+      "eventAt": "2026-09-29T18:41:59.778Z",
+      "scope": "所有付费套餐",
+      "approximate": true
+    },
+    {
+      "id": "record:2103637477760311522:2026-09-26T17:10:06.297Z",
+      "kind": "record",
+      "title": "Tibo 补偿重置",
+      "summary": "已确认 Codex 每周使用额度已重置。",
+      "url": "https://x.com/thsottiaux/status/2103637477760311522",
+      "postedAt": "2026-09-26T00:07:13.000Z",
+      "eventAt": "2026-09-26T17:10:06.297Z",
+      "scope": "所有付费套餐",
+      "approximate": true
+    }
+  ]
+}

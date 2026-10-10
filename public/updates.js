@@ -1,192 +1,148 @@
-// 仅动态页加载 X 官方组件；不请求付费 API，也不保存第三方账号数据。
-const feed = document.querySelector('[data-x-feed]');
-const host = feed?.querySelector('[data-x-host]');
-const placeholder = feed?.querySelector('[data-x-placeholder]');
-const message = feed?.querySelector('[data-x-message]');
-const explanation = feed?.querySelector('[data-x-explanation]');
-const status = feed?.querySelector('[data-x-status]');
-const refresh = feed?.querySelector('[data-x-refresh]');
-const username = feed?.dataset.xUsername;
+import { UPDATE_SOURCE, readUpdateFeed, formatUpdateTime, updateFeedIsStale } from './updates-data.js';
+import { renderUpdateCards } from './updates-render.js';
 
-if (host && placeholder && status && refresh && /^[a-z0-9_]{1,15}$/i.test(username || '')) {
-  const interval = 5 * 60 * 1000;
-  let widgetsPromise;
-  let generation = 0;
-  let currentStage;
-  let pendingStage;
-  let currentTheme;
-  let pendingTheme;
+const root = document.querySelector('[data-updates]');
+const list = root?.querySelector('[data-updates-list]');
+const status = root?.querySelector('[data-updates-status]');
+const metadata = root?.querySelector('[data-updates-meta]');
+const refresh = root?.querySelector('[data-updates-refresh]');
+const username = root?.dataset.username;
+
+if (list && status && metadata && refresh && /^[a-z0-9_]{1,15}$/i.test(username || '')) {
+  const storageKey = `bitdrift-updates:${username}`;
+  const buttonLabel = refresh.querySelector('span');
+  let current;
+  let signature = '';
+  let state = 'snapshot';
   let busy = false;
   let active = true;
   let hovered = false;
   let lastAttempt = 0;
-  let reloadTimer;
-  let cancelRender;
-  const theme = () => document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-  const api = () => window.twttr?.widgets?.createTimeline ? window.twttr.widgets : null;
+  let timer;
+  let controller;
+  let generation = 0;
 
-  function loadWidgets() {
-    if (api()) return Promise.resolve(api());
-    if (widgetsPromise) return widgetsPromise;
-    widgetsPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://platform.twitter.com/widgets.js';
-      script.async = true;
-      let finished = false;
-      const timeout = setTimeout(() => finish(new Error('X component timed out')), 10000);
-      function finish(error) {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timeout);
-        script.onload = script.onerror = null;
-        if (error) {
-          script.remove();
-          reject(error);
-        } else {
-          resolve(api());
-        }
-      }
-      script.onload = () => {
-        if (api()) finish();
-        else if (window.twttr?.ready) window.twttr.ready(() => api() ? finish() : finish(new Error('X component unavailable')));
-        else finish(new Error('X component unavailable'));
-      };
-      script.onerror = () => finish(new Error('X component unavailable'));
-      document.head.append(script);
-    }).catch(error => {
-      widgetsPromise = null;
-      throw error;
-    });
-    return widgetsPromise;
+  function apply(feed, nextState) {
+    const nextSignature = JSON.stringify(feed.items);
+    if (signature !== nextSignature) {
+      list.innerHTML = renderUpdateCards(feed);
+      signature = nextSignature;
+    }
+    current = feed;
+    state = nextState;
+    root.dataset.state = nextState;
+    metadata.textContent = `来源检查 ${formatUpdateTime(feed.sourceCheckedAt)} · 本站取得 ${formatUpdateTime(feed.fetchedAt)} · 北京时间`;
+    showStatus();
   }
-
-  // 自动刷新只发生在页顶空闲时，避免打断正在阅读或操作时间线的人。
-  function canReload() {
-    return active && !document.hidden && !busy && !hovered && window.scrollY < 80 && !host.contains(document.activeElement);
+  function showStatus() {
+    if (!current) {
+      status.textContent = '暂时无法获取记录，可稍后重试或打开原站。';
+      return;
+    }
+    const stale = updateFeedIsStale(current);
+    if (state === 'stale' || stale) status.textContent = '来源暂不可用或数据已过期，保留已取得的记录。';
+    else if (state === 'snapshot' || state === 'saved') status.textContent = '显示已保存的公开记录，尚未确认本轮更新。';
+    else status.textContent = `${current.items.length} 条公开记录 · 每十分钟检查更新`;
   }
-  function scheduleReload(delay = Math.max(1000, interval - (Date.now() - lastAttempt))) {
-    clearTimeout(reloadTimer);
-    if (!active || document.hidden || !currentStage) return;
-    reloadTimer = setTimeout(() => {
-      if (canReload()) render();
-      else scheduleReload(60000);
+  function remember(feed) {
+    try { localStorage.setItem(storageKey, JSON.stringify(feed)); } catch { /* 存储被阻止时仍可显示和刷新。 */ }
+  }
+  function idle() {
+    return active && !document.hidden && !busy && !hovered && window.scrollY < 100 && !list.contains(document.activeElement);
+  }
+  function schedule(delay = Math.max(1000, UPDATE_SOURCE.interval - (Date.now() - lastAttempt))) {
+    clearTimeout(timer);
+    if (!active || document.hidden) return;
+    timer = setTimeout(() => {
+      if (idle()) update();
+      else schedule(60000);
     }, delay);
   }
-
-  async function render() {
-    if (!active || document.hidden) return;
-    cancelRender?.();
-    pendingStage?.remove();
+  async function update() {
+    if (!active || document.hidden || busy) return;
     const request = ++generation;
-    const requestedTheme = theme();
-    pendingTheme = requestedTheme;
-    const stage = document.createElement('div');
-    stage.className = 'updates-stage';
-    stage.dataset.pending = '';
-    stage.setAttribute('aria-hidden', 'true');
-    stage.inert = true;
-    host.append(stage);
-    pendingStage = stage;
+    const operation = new AbortController();
+    controller = operation;
+    const timeout = setTimeout(() => operation.abort(), 12000);
     busy = true;
     lastAttempt = Date.now();
-    clearTimeout(reloadTimer);
+    clearTimeout(timer);
     refresh.disabled = true;
-    refresh.querySelector('span').textContent = '加载中';
-    host.setAttribute('aria-busy', 'true');
-    feed.dataset.state = 'loading';
-    status.textContent = currentStage ? '正在重新载入时间线…' : '正在加载 X 时间线…';
-    if (!currentStage) {
-      if (message) message.textContent = '正在连接 X 时间线';
-      if (explanation) explanation.textContent = '若 X 暂时无法提供内容，下方仍可直接打开原站。';
-    }
-    let deadline;
-    const cancelled = new Promise((_, reject) => {
-      cancelRender = () => reject(new Error('X render superseded'));
-      deadline = setTimeout(() => reject(new Error('X timeline timed out')), 15000);
-    });
+    buttonLabel.textContent = '检查中';
+    root.setAttribute('aria-busy', 'true');
+    status.textContent = '正在检查公开来源，已显示的记录仍可阅读…';
     try {
-      const result = await Promise.race([
-        loadWidgets().then(widgets => {
-          if (request !== generation || !active) throw new Error('X render superseded');
-          return widgets.createTimeline({ sourceType: 'profile', screenName: username }, stage, {
-            theme: requestedTheme, height: 640, dnt: true, lang: 'zh-cn'
-          });
-        }),
-        cancelled
-      ]);
+      const response = await fetch('/api/updates', {
+        headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store', redirect: 'error', signal: operation.signal
+      });
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('Updates endpoint unavailable');
+      const payload = await response.json();
       if (request !== generation || !active) return;
-      if (!result || result.tagName !== 'IFRAME') throw new Error('X timeline unavailable');
-      result.title = `@${username} 的 X 时间线`;
-      currentStage?.remove();
-      currentStage = stage;
-      currentTheme = requestedTheme;
-      feed.dataset.hasTimeline = 'true';
-      delete stage.dataset.pending;
-      stage.removeAttribute('aria-hidden');
-      stage.inert = false;
-      placeholder.hidden = true;
-      feed.dataset.state = 'ready';
-      const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-      status.textContent = `最近载入 ${time} · 内容由 X 提供`;
-    } catch {
-      stage.remove();
-      if (request !== generation || !active) return;
-      feed.dataset.state = currentStage ? 'ready' : 'error';
-      status.textContent = currentStage
-        ? '刷新暂时不可用，仍显示上次载入的时间线。'
-        : 'X 组件未能返回时间线，可稍后重试。';
-      if (!currentStage) {
-        if (message) message.textContent = 'X 时间线暂时不可用';
-        if (explanation) explanation.textContent = 'X 的访问限制或网络问题会影响加载，本站当前未获取到推文内容。';
+      if (payload.version !== 1 || !['live', 'cache', 'stale', 'snapshot'].includes(payload.state)) throw new Error('Invalid updates response');
+      const feed = readUpdateFeed(payload.data, username);
+      // 旧缓存或随部署保存的记录不能覆盖浏览器里较新的来源数据。
+      if (current && Date.parse(feed.sourceCheckedAt) < Date.parse(current.sourceCheckedAt)) {
+        state = 'stale';
+        root.dataset.state = state;
+        showStatus();
+      } else {
+        apply(feed, payload.state);
+        remember(feed);
       }
+    } catch {
+      if (request !== generation || !active) return;
+      state = 'stale';
+      root.dataset.state = state;
+      showStatus();
     } finally {
-      clearTimeout(deadline);
+      clearTimeout(timeout);
       if (request === generation && active) {
-        cancelRender = null;
-        pendingStage = null;
-        pendingTheme = null;
+        controller = null;
         busy = false;
         refresh.disabled = false;
-        refresh.querySelector('span').textContent = '刷新动态';
-        host.setAttribute('aria-busy', 'false');
-        scheduleReload();
+        buttonLabel.textContent = '检查更新';
+        root.setAttribute('aria-busy', 'false');
+        schedule();
       }
     }
   }
 
+  try { current = readUpdateFeed(JSON.parse(document.querySelector('#updates-data')?.textContent || 'null'), username); } catch {}
+  try {
+    const saved = readUpdateFeed(JSON.parse(localStorage.getItem(storageKey) || 'null'), username);
+    if (!current || Date.parse(saved.sourceCheckedAt) > Date.parse(current.sourceCheckedAt)) { current = saved; state = 'saved'; }
+  } catch {}
+  if (current) apply(current, state);
+  else showStatus();
   refresh.hidden = false;
-  refresh.addEventListener('click', () => render());
-  feed.addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') hovered = true; });
-  feed.addEventListener('pointerleave', () => { hovered = false; });
-  window.addEventListener('bitdrift:themechange', () => {
-    if ((pendingTheme || currentTheme) !== theme()) render();
-  });
+  refresh.addEventListener('click', () => update());
+  root.addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') hovered = true; });
+  root.addEventListener('pointerleave', () => { hovered = false; });
   document.addEventListener('visibilitychange', () => {
-    clearTimeout(reloadTimer);
+    clearTimeout(timer);
     if (!active || document.hidden) return;
-    if (currentTheme !== theme() || (Date.now() - lastAttempt >= interval && canReload())) render();
-    else scheduleReload();
+    showStatus();
+    if (Date.now() - lastAttempt >= UPDATE_SOURCE.interval && idle()) update();
+    else schedule();
   });
   window.addEventListener('pagehide', () => {
     active = false;
     generation++;
-    clearTimeout(reloadTimer);
-    cancelRender?.();
-    cancelRender = null;
-    pendingStage?.remove();
-    pendingStage = null;
-    pendingTheme = null;
+    controller?.abort();
+    controller = null;
+    clearTimeout(timer);
     busy = false;
     hovered = false;
     refresh.disabled = false;
-    refresh.querySelector('span').textContent = '刷新动态';
-    host.setAttribute('aria-busy', 'false');
+    buttonLabel.textContent = '检查更新';
+    root.setAttribute('aria-busy', 'false');
   });
   window.addEventListener('pageshow', event => {
     if (!event.persisted) return;
     active = true;
-    if (!currentStage || currentTheme !== theme()) render();
-    else scheduleReload();
+    showStatus();
+    if (Date.now() - lastAttempt >= UPDATE_SOURCE.interval && idle()) update();
+    else schedule();
   });
-  if (!document.hidden) render();
+  if (!document.hidden) update();
 }

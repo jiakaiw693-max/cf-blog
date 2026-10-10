@@ -50,7 +50,7 @@ function head(title, description, path = '/') {
   <meta name="theme-color" content="#f3f6fc"><meta name="color-scheme" content="light dark"><meta name="description" content="${esc(description)}">
   <meta property="og:type" content="${path?.startsWith('/notes/') && path !== '/notes/' ? 'article' : 'website'}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:locale" content="zh_CN">
   ${base && path ? `<link rel="canonical" href="${esc(base + path)}"><meta property="og:url" content="${esc(base + path)}">` : ''}
-  <title>${esc(title)}</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><script src="/theme.js"></script><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/future.css">${path === '/' || path === '/updates/' ? '<link rel="stylesheet" href="/updates.css">' : ''}${path === '/updates/' ? '<meta name="twitter:dnt" content="on"><script src="/updates.js" type="module"></script>' : ''}${path?.startsWith('/notes/') && path !== '/notes/' ? '<link rel="stylesheet" href="/reader.css">' : ''}<script src="/app.js" defer></script><script src="/experience.js" type="module"></script><script src="/library.js" type="module"></script><script src="/reader.js" type="module"></script>`;
+  <title>${esc(title)}</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><script src="/theme.js"></script><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/future.css">${path === '/' || path === '/updates/' ? '<link rel="stylesheet" href="/updates.css">' : ''}${path === '/updates/' ? '<script src="/updates.js" type="module"></script>' : ''}${path?.startsWith('/notes/') && path !== '/notes/' ? '<link rel="stylesheet" href="/reader.css">' : ''}<script src="/app.js" defer></script><script src="/experience.js" type="module"></script><script src="/library.js" type="module"></script><script src="/reader.js" type="module"></script>`;
 }
 
 const themeIcons = {
@@ -70,7 +70,7 @@ const libraryItems = [
 ];
 const saveButton = (id,name) => `<button class="save-button" type="button" data-save-item="${esc(id)}" aria-label="收藏${esc(name)}" aria-pressed="false"><span class="save-symbol" data-save-icon aria-hidden="true">☆</span><span data-save-label>收藏</span></button>`;
 const commandItems = [
-  ...[['首页','/','个人网站首页'],['网站','/directory/',`探索 ${site.websites.length} 个网站入口`],['手记','/notes/',`阅读 ${site.notes.length} 篇手记`],['动态','/updates/',`关注 @${site.updates.username} 的 X 公开更新`],['收藏','/library/','收藏与最近打开'],['关于','/about/','个人介绍与联系方式'],['联系我','/about/#contact',site.email]].map(([name,href,description])=>({name,description,category:'页面',href})),
+  ...[['首页','/','个人网站首页'],['网站','/directory/',`探索 ${site.websites.length} 个网站入口`],['手记','/notes/',`阅读 ${site.notes.length} 篇手记`],['动态','/updates/',`@${site.updates.username} 的 Codex 重置消息与公开记录`],['收藏','/library/','收藏与最近打开'],['关于','/about/','个人介绍与联系方式'],['联系我','/about/#contact',site.email]].map(([name,href,description])=>({name,description,category:'页面',href})),
   ...(site.explorations || []).map(route => ({name:route.title,description:route.description,category:'探索路线',href:`/notes/#route-${route.id}`})),
   ...site.notes.map(note=>({name:note.title,description:note.excerpt,category:'手记',href:`/notes/${note.slug}/`,itemId:`note:${note.slug}`})),
   ...site.websites.map(link=>({name:link.name,description:link.description,category:link.category,href:link.url,external:true,itemId:`site:${link.url}`})),
@@ -107,7 +107,7 @@ function header(current = '') {
 function footer() {
   return `<footer class="site-footer compact-footer"><div class="container footer-inner"><span>© ${new Date().getUTCFullYear()} ${esc(site.name)} · ${esc(site.brand)}</span><div class="footer-contact"><a href="mailto:${esc(site.email)}">${esc(site.email)}</a><button type="button" data-copy="${esc(site.email)}" data-copy-kind="email" aria-label="复制邮箱">复制</button><a href="${esc(site.github)}" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href="/about/">关于</a></div></div><p class="container email-status copy-status" role="status" aria-live="polite"></p></footer>`;
 }
-const pageKit = createPages(site, { esc, head, header, footer, saveButton, dateLabel, readTime });
+const pageKit = createPages(site, { esc, head, header, footer, saveButton, dateLabel, readTime, jsonForHtml });
 await writeFile(resolve(out, 'index.html'), renderHome(site, { esc, head, header, footer, ...pageKit }));
 for (const [path, html] of Object.entries(pageKit.pages)) {
   await mkdir(resolve(out, path), { recursive: true });
